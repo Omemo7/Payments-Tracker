@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // Added for input formatters
 import 'package:intl/intl.dart'; // For date formatting
 
 // Define Enums
@@ -45,7 +46,8 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(appBarTitle), // Updated AppBar title
+        title: Text(appBarTitle),
+        centerTitle: true, // Centered AppBar title
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -56,6 +58,7 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
               'Date: ${DateFormat.yMd().format(_currentDateTime)}',
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
+            const SizedBox(height: 8), // Added spacing between Date and Time
             Text(
               'Time: ${DateFormat.jm().format(_currentDateTime)}',
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -77,16 +80,25 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
                 border: const OutlineInputBorder(),
                 prefixText: widget.transactionType == TransactionType.income ? '+ ' : '- ',
               ),
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: false), // Updated keyboardType
+              inputFormatters: <TextInputFormatter>[ // Added inputFormatters
+                FilteringTextInputFormatter.allow(RegExp(r'''^\d*\.?\d{0,2}''')),
+              ],
             ),
             const SizedBox(height: 30),
             Center(
               child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 50), // Full width, 50 height
+                  shape: const StadiumBorder(), // Rounded corners
+                  textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold), // Button text style
+                ),
                 onPressed: () {
                   // TODO: Implement add/edit functionality based on widget.mode and widget.transactionType
                   final String notes = _notesController.text;
                   final double? amount = double.tryParse(_amountController.text);
-                  if (amount != null) {
+                  // Updated validation: check if amount is not null AND positive
+                  if (amount != null && amount > 0) {
                     // Process notes and amount
                     print('Mode: ${widget.mode}');
                     print('Type: ${widget.transactionType}');
@@ -94,17 +106,13 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
                     print('Amount: $amount');
                     Navigator.pop(context); // Go back after adding/editing
                   } else {
-                    // Show error if amount is invalid
+                    // Show error if amount is invalid or not positive
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Please enter a valid amount')),
+                      const SnackBar(content: Text('Please enter a valid positive amount')), // Updated error message
                     );
                   }
                 },
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 15),
-                  textStyle: const TextStyle(fontSize: 18),
-                ),
-                child: Text(buttonText), // Updated button text
+                child: Text(buttonText),
               ),
             ),
           ],

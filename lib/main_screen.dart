@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'add_edit_transaction_screen.dart';
+import 'transaction_details_screen.dart';
+import 'monthly_summary_screen.dart';
 // Placeholder screen for Details
 class DetailsScreen extends StatelessWidget {
   const DetailsScreen({super.key});
@@ -13,18 +15,7 @@ class DetailsScreen extends StatelessWidget {
   }
 }
 
-// Placeholder screen for Monthly Summary
-class MonthlySummaryScreen extends StatelessWidget {
-  const MonthlySummaryScreen({super.key});
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Monthly Summary')),
-      body: const Center(child: Text('Monthly Summary Screen')),
-    );
-  }
-}
 
 // Placeholder screen for Add operation
 class AddScreen extends StatelessWidget {
@@ -83,7 +74,7 @@ class MainScreen extends StatelessWidget {
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const DetailsScreen()),
+                    MaterialPageRoute(builder: (context) => const TransactionDetailsScreen()),
                   );
                 },
               ),
@@ -96,10 +87,15 @@ class MainScreen extends StatelessWidget {
                 ),
                 child: const Text('Monthly Summary'),
                 onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const MonthlySummaryScreen()),
-                  );
+                  // Navigator.push(
+                  //   context,
+                  //   MaterialPageRoute(builder: (context) => const MonthlySummaryScreen()),
+                  // );
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                    backgroundColor: Colors.orange,
+
+                    content: Text("Not implemented in this version"),
+                  ));
                 },
               ),
               const SizedBox(height: 20),
