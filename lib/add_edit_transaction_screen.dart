@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // Added for input formatters
 import 'package:intl/intl.dart'; // For date formatting
+import 'package:payments_tracker_flutter/transaction_model.dart';
+import 'database_helper.dart';
 
 // Define Enums
 enum TransactionType { income, expense }
@@ -33,6 +35,59 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
     _notesController.dispose();
     _amountController.dispose();
     super.dispose();
+  }
+  Future<void> _addTransaction() async {
+    double unsignedAmount=double.parse(_amountController.text);
+    TransactionModel txn = TransactionModel(
+      amount: widget.transactionType==TransactionType.income? unsignedAmount : -1*unsignedAmount, // Use tryParse to handle potential errors
+      note: _notesController.text.trim(), // Trim whitespace from notes
+      createdAt: _currentDateTime,
+    );
+
+
+      final int addedTransactionId=await DatabaseHelper.instance.insertTransaction(txn);
+      if(addedTransactionId > 0){
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Transaction $addedTransactionId added successfully')),
+        );
+        Navigator.pop(context);
+      }else
+        {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Error adding transaction')),
+          );
+        }
+
+
+
+  }
+  Future<void> _editTransaction() async {
+
+  }
+  Future<void> onAddEditButtonPressed() async
+  {
+    if(_amountController.text.isEmpty || _notesController.text.isEmpty)
+      {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please fill in all fields')),
+        );
+        return;
+      }
+
+
+    switch(widget.mode){
+      case ScreenMode.add:
+        await _addTransaction();
+        break;
+      case ScreenMode.edit:
+        await _editTransaction();
+        break;
+    }
+
+
+
+
+
   }
 
   @override
@@ -93,25 +148,7 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
                   shape: const StadiumBorder(), // Rounded corners
                   textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold), // Button text style
                 ),
-                onPressed: () {
-                  // TODO: Implement add/edit functionality based on widget.mode and widget.transactionType
-                  final String notes = _notesController.text;
-                  final double? amount = double.tryParse(_amountController.text);
-                  // Updated validation: check if amount is not null AND positive
-                  if (amount != null && amount > 0) {
-                    // Process notes and amount
-                    print('Mode: ${widget.mode}');
-                    print('Type: ${widget.transactionType}');
-                    print('Notes: $notes');
-                    print('Amount: $amount');
-                    Navigator.pop(context); // Go back after adding/editing
-                  } else {
-                    // Show error if amount is invalid or not positive
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Please enter a valid positive amount')), // Updated error message
-                    );
-                  }
-                },
+                onPressed: onAddEditButtonPressed, // Call the method here
                 child: Text(buttonText),
               ),
             ),
@@ -121,3 +158,5 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
     );
   }
 }
+
+

@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:payments_tracker_flutter/main_screen.dart';
+import 'database_helper.dart';
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
 
-void main() {
+  final db = await DatabaseHelper.instance.database;
+  print("Database created with transactions table ✅");
+
   runApp(const MyApp());
 }
 

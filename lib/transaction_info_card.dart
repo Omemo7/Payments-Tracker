@@ -3,11 +3,9 @@ import 'package:intl/intl.dart'; // For date formatting
 // Assuming TransactionType is in add_edit_transaction_screen.dart
 // If it's moved to a common file, this import will need to change.
 import './add_edit_transaction_screen.dart'; // For TransactionType
-
+import 'transaction_model.dart';
 class TransactionInfoCard extends StatelessWidget {
-  final DateTime dateTime;
-  final String notes;
-  final double amount;
+  final TransactionModel transaction;
   final double balance;
   final TransactionType transactionType;
   final VoidCallback onEditPressed;
@@ -15,9 +13,7 @@ class TransactionInfoCard extends StatelessWidget {
 
   const TransactionInfoCard({
     super.key,
-    required this.dateTime,
-    required this.notes,
-    required this.amount,
+    required this.transaction,
     required this.balance,
     required this.transactionType,
     required this.onEditPressed,
@@ -26,12 +22,15 @@ class TransactionInfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color amountColor =
-        transactionType == TransactionType.income ? Colors.green : Colors.red;
+
+    final Color cardBackgroundColor = transactionType == TransactionType.income
+        ? Colors.green.withOpacity(0.6)
+        : Colors.red.withOpacity(0.6);
     final String amountPrefix =
-        transactionType == TransactionType.income ? '+' : '-';
+        transactionType == TransactionType.income ? '+' : '';
 
     return Card(
+      color: cardBackgroundColor,
       elevation: 4.0,
       margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
@@ -44,31 +43,31 @@ class TransactionInfoCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Date: ${DateFormat.yMd().format(dateTime)}',
+                  'Date: ${DateFormat.yMd().format(transaction.createdAt)}',
                   style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
                 ),
                 Text(
-                  'Time: ${DateFormat.jm().format(dateTime)}',
+                  'Time: ${DateFormat.jm().format(transaction.createdAt)}',
                   style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
                 ),
               ],
             ),
             const SizedBox(height: 12),
-            if (notes.isNotEmpty) ...[
+            if (transaction.note.isNotEmpty) ...[
               Text(
-                'Notes: $notes',
-                style: const TextStyle(fontSize: 16),
+                'Notes: ${transaction.note}',
+                style: const TextStyle(fontSize: 16,fontWeight: FontWeight.bold),
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 12),
             ],
             Text(
-              'Amount: $amountPrefix${amount.toStringAsFixed(2)}',
+              'Amount: $amountPrefix${transaction.amount.toStringAsFixed(2)}',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: amountColor,
+
               ),
             ),
             Text(
@@ -76,7 +75,7 @@ class TransactionInfoCard extends StatelessWidget {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: amountColor,
+
               ),
             ),
             const SizedBox(height: 12),

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:payments_tracker_flutter/database_helper.dart';
 import 'add_edit_transaction_screen.dart';
-import 'transaction_details_screen.dart';
+import 'transactions_log_screen.dart';
 import 'monthly_summary_screen.dart';
+import 'database_helper.dart';
 // Placeholder screen for Details
 class DetailsScreen extends StatelessWidget {
   const DetailsScreen({super.key});
@@ -43,11 +45,32 @@ class SubtractScreen extends StatelessWidget {
   }
 }
 
-class MainScreen extends StatelessWidget {
+class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
 
   @override
+  State<MainScreen> createState() => _MainScreenState();
+}
+
+class _MainScreenState extends State<MainScreen> {
+  Future<double> _currentBalanceFuture = DatabaseHelper.instance.getCurrentBalance();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBalance();
+  }
+
+  Future<void> _loadBalance() async {
+    setState(() {
+      _currentBalanceFuture = DatabaseHelper.instance.getCurrentBalance();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    // Periodically refresh the balance or use a state management solution
+    // for more complex scenarios. For simplicity, we can refresh on build.
     return Scaffold(
       appBar: AppBar(
         title: const Text('Summary'),
@@ -59,9 +82,26 @@ class MainScreen extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
-              const Text(
-                'Total amount', // We can make this dynamic later
-                style: TextStyle(fontSize: 30, fontWeight: FontWeight.w600),
+              FutureBuilder<double>(
+                future: _currentBalanceFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const CircularProgressIndicator();
+                  } else if (snapshot.hasError) {
+                    return Text('Error: ${snapshot.error}');
+                  } else {
+                    final balance = snapshot.data ?? 0.0;
+                    final color = balance >= 0 ? Colors.green : Colors.red;
+                    return Text(
+                      '${balance.toStringAsFixed(2)}',
+                      style: TextStyle(
+                        fontSize: 30,
+                        fontWeight: FontWeight.w600,
+                        color: color,
+                      ),
+                    );
+                  }
+                },
               ),
               const SizedBox(height: 40),
               ElevatedButton(
@@ -74,8 +114,8 @@ class MainScreen extends StatelessWidget {
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const TransactionDetailsScreen()),
-                  );
+                    MaterialPageRoute(builder: (context) => const TransactionsLogScreen()),
+                  ).then((_) => _loadBalance()); // Refresh balance after returning
                 },
               ),
               const SizedBox(height: 20),
@@ -113,7 +153,7 @@ class MainScreen extends StatelessWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(builder: (context) => const AddEditTransactionScreen(transactionType: TransactionType.income, mode: ScreenMode.add)),
-                      );
+                      ).then((_) => _loadBalance()); // Refresh balance after returning
                     },
                   ),
                   const SizedBox(width: 30),
@@ -128,7 +168,7 @@ class MainScreen extends StatelessWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(builder: (context) => const AddEditTransactionScreen(transactionType: TransactionType.expense, mode: ScreenMode.add)),
-                      );
+                      ).then((_) => _loadBalance()); // Refresh balance after returning
                     },
                   ),
                 ],
