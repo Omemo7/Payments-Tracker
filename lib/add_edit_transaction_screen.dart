@@ -11,12 +11,15 @@ enum ScreenMode { add, edit }
 class AddEditTransactionScreen extends StatefulWidget {
   final TransactionType transactionType;
   final ScreenMode mode;
+  final TransactionModel? transactionToEdit;
 
   const AddEditTransactionScreen({
     super.key,
     required this.transactionType,
     required this.mode,
-  });
+    this.transactionToEdit,
+  }) : assert(mode == ScreenMode.edit ? transactionToEdit != null : true,
+            'transactionToEdit cannot be null in edit mode');
 
   @override
   State<AddEditTransactionScreen> createState() => _AddEditTransactionScreenState();
@@ -25,10 +28,20 @@ class AddEditTransactionScreen extends StatefulWidget {
 class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
   final _notesController = TextEditingController();
   final _amountController = TextEditingController();
-  DateTime _currentDateTime = DateTime.now();
+  late DateTime _currentDateTime; // Initialized in initState
 
-  // TODO: Use widget.transactionType and widget.mode to further customize UI/logic
-  // For example, pre-fill fields if in edit mode.
+  @override
+  void initState() {
+    super.initState();
+    if (widget.mode == ScreenMode.edit && widget.transactionToEdit != null) {
+      _notesController.text = widget.transactionToEdit!.note ?? '';
+      _amountController.text = widget.transactionToEdit!.amount.abs().toStringAsFixed(2);
+      _currentDateTime = widget.transactionToEdit!.createdAt;
+    } else {
+      // Add mode: always use current date and time
+      _currentDateTime = DateTime.now();
+    }
+  }
 
   @override
   void dispose() {
@@ -36,46 +49,83 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
     _amountController.dispose();
     super.dispose();
   }
+
   Future<void> _addTransaction() async {
-    double unsignedAmount=double.parse(_amountController.text);
+    try {
+      print('Running autoCloseDay before adding a new transaction...');
+      await DatabaseHelper.instance.autoCloseDay();
+      print('autoCloseDay completed.');
+    } catch (e) {
+      print('Error during autoCloseDay before adding transaction: $e');
+    }
+
+    double unsignedAmount = double.parse(_amountController.text);
     TransactionModel txn = TransactionModel(
-      amount: widget.transactionType==TransactionType.income? unsignedAmount : -1*unsignedAmount, // Use tryParse to handle potential errors
-      note: _notesController.text.trim(), // Trim whitespace from notes
-      createdAt: _currentDateTime,
+      amount: widget.transactionType == TransactionType.income ? unsignedAmount : -1 * unsignedAmount,
+      note: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
+      createdAt: _currentDateTime, // This is DateTime.now() for add mode
     );
 
-
-      final int addedTransactionId=await DatabaseHelper.instance.insertTransaction(txn);
-      if(addedTransactionId > 0){
+    final int addedTransactionId = await DatabaseHelper.instance.insertTransaction(txn);
+    if (addedTransactionId > 0) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Transaction $addedTransactionId added successfully')),
         );
-        Navigator.pop(context);
-      }else
-        {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Error adding transaction')),
-          );
-        }
-
-
-
-  }
-  Future<void> _editTransaction() async {
-
-  }
-  Future<void> onAddEditButtonPressed() async
-  {
-    if(_amountController.text.isEmpty || _notesController.text.isEmpty)
-      {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please fill in all fields')),
-        );
-        return;
+        Navigator.pop(context, true);
       }
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Error adding transaction')),
+        );
+      }
+    }
+  }
 
+  Future<void> _editTransaction() async {
+    double unsignedAmount = double.parse(_amountController.text);
+    TransactionModel updatedTxn = TransactionModel(
+      id: widget.transactionToEdit!.id,
+      amount: widget.transactionType == TransactionType.income ? unsignedAmount : -1 * unsignedAmount,
+      note: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
+      createdAt: _currentDateTime, // This is the original createdAt for edit mode
+    );
 
-    switch(widget.mode){
+    final int rowsAffected = await DatabaseHelper.instance.updateTransaction(updatedTxn);
+    if (rowsAffected > 0) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Transaction updated successfully')),
+        );
+        Navigator.pop(context, true);
+      }
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Error updating transaction or no changes made')),
+        );
+      }
+    }
+  }
+
+  Future<void> onAddEditButtonPressed() async {
+    if (_amountController.text.isEmpty) { // Notes field check removed
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fill in the amount.')), // Updated message
+      );
+      return;
+    }
+    try {
+      double.parse(_amountController.text);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Invalid amount format')),
+      );
+      return;
+    }
+
+    switch (widget.mode) {
       case ScreenMode.add:
         await _addTransaction();
         break;
@@ -83,80 +133,121 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
         await _editTransaction();
         break;
     }
+  }
+  
+  // _selectDate and _selectTime methods can be kept for potential future use 
+  // or removed if definitely not needed.
+  // For now, they are just not called from the UI.
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _currentDateTime,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2101),
+    );
+    if (picked != null && picked != _currentDateTime) {
+      setState(() {
+        _currentDateTime = DateTime(
+          picked.year,
+          picked.month,
+          picked.day,
+          _currentDateTime.hour,
+          _currentDateTime.minute,
+          _currentDateTime.second,
+        );
+      });
+    }
+  }
 
-
-
-
-
+  Future<void> _selectTime(BuildContext context) async {
+    final TimeOfDay? picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(_currentDateTime),
+    );
+    if (picked != null) {
+      setState(() {
+        _currentDateTime = DateTime(
+          _currentDateTime.year,
+          _currentDateTime.month,
+          _currentDateTime.day,
+          picked.hour,
+          picked.minute,
+        );
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    // Determine the AppBar title and Button text based on mode
     String appBarTitle = widget.mode == ScreenMode.add ? 'Add' : 'Edit';
     appBarTitle += ' Transaction';
-    appBarTitle += (widget.transactionType == TransactionType.income ? ' (Income)' : ' (Expense)');
+
+    final currentEffectiveType = widget.mode == ScreenMode.edit 
+        ? (widget.transactionToEdit!.amount >= 0 ? TransactionType.income : TransactionType.expense)
+        : widget.transactionType;
+    
+    appBarTitle += (currentEffectiveType == TransactionType.income ? ' (Income)' : ' (Expense)');
     
     final String buttonText = widget.mode == ScreenMode.add ? 'Add' : 'Save Changes';
 
     return Scaffold(
       appBar: AppBar(
         title: Text(appBarTitle),
-        centerTitle: true, // Centered AppBar title
+        centerTitle: true,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Text(
-              'Date: ${DateFormat.yMd().format(_currentDateTime)}',
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8), // Added spacing between Date and Time
-            Text(
-              'Time: ${DateFormat.jm().format(_currentDateTime)}',
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 20),
-            TextField(
-              controller: _notesController,
-              decoration: const InputDecoration(
-                labelText: 'Notes',
-                border: OutlineInputBorder(),
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(
+                'Date: ${DateFormat.yMd().format(_currentDateTime)}',
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
-              maxLines: 3,
-            ),
-            const SizedBox(height: 20),
-            TextField(
-              controller: _amountController,
-              decoration: InputDecoration(
-                labelText: 'Amount',
-                border: const OutlineInputBorder(),
-                prefixText: widget.transactionType == TransactionType.income ? '+ ' : '- ',
+              const SizedBox(height: 8),
+              Text(
+                'Time: ${DateFormat.jm().format(_currentDateTime)}',
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
-              keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: false), // Updated keyboardType
-              inputFormatters: <TextInputFormatter>[ // Added inputFormatters
-                FilteringTextInputFormatter.allow(RegExp(r'''^\d*\.?\d{0,2}''')),
-              ],
-            ),
-            const SizedBox(height: 30),
-            Center(
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 50), // Full width, 50 height
-                  shape: const StadiumBorder(), // Rounded corners
-                  textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold), // Button text style
+              const SizedBox(height: 20),
+              TextField(
+                controller: _notesController,
+                decoration: const InputDecoration(
+                  labelText: 'Notes (Optional)', // Updated label
+                  border: OutlineInputBorder(),
                 ),
-                onPressed: onAddEditButtonPressed, // Call the method here
-                child: Text(buttonText),
+                maxLines: 3,
               ),
-            ),
-          ],
+              const SizedBox(height: 20),
+              TextField(
+                controller: _amountController,
+                decoration: InputDecoration(
+                  labelText: 'Amount',
+                  border: const OutlineInputBorder(),
+                  prefixText: currentEffectiveType == TransactionType.income ? '+ ' : '- ',
+                ),
+                keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: false),
+                inputFormatters: <TextInputFormatter>[
+                  FilteringTextInputFormatter.allow(RegExp(r'''^\d*\.?\d{0,2}''')),
+                ],
+              ),
+              const SizedBox(height: 30),
+              Center(
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 50),
+                    shape: const StadiumBorder(),
+                    textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  onPressed: onAddEditButtonPressed,
+                  child: Text(buttonText),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
-
-

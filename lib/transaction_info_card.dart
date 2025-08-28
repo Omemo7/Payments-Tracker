@@ -4,30 +4,64 @@ import 'package:intl/intl.dart'; // For date formatting
 // If it's moved to a common file, this import will need to change.
 import './add_edit_transaction_screen.dart'; // For TransactionType
 import 'transaction_model.dart';
+
 class TransactionInfoCard extends StatelessWidget {
   final TransactionModel transaction;
   final double balance;
   final TransactionType transactionType;
-  final VoidCallback onEditPressed;
-  final VoidCallback onDeletePressed;
+  final VoidCallback onEditPressed; // Will be wrapped
+  final VoidCallback onDeletePressed; // Will be wrapped
+  final DateTime todayDate; // New required parameter
 
   const TransactionInfoCard({
     super.key,
     required this.transaction,
     required this.balance,
     required this.transactionType,
-    required this.onEditPressed,
-    required this.onDeletePressed,
-  });
+    required VoidCallback onEditPressed, // Original callbacks
+    required VoidCallback onDeletePressed,
+    required this.todayDate,
+  })  : 
+        // Wrap the original callbacks with the date check
+        this.onEditPressed = onEditPressed,
+        this.onDeletePressed = onDeletePressed;
+
+  DateTime _normalizeDate(DateTime dateTime) {
+    return DateTime(dateTime.year, dateTime.month, dateTime.day);
+  }
 
   @override
   Widget build(BuildContext context) {
-
     final Color cardBackgroundColor = transactionType == TransactionType.income
         ? Colors.green.withOpacity(0.6)
         : Colors.red.withOpacity(0.6);
     final String amountPrefix =
         transactionType == TransactionType.income ? '+' : '';
+
+    // Effective callbacks with date check
+    final VoidCallback effectiveOnEditPressed = () {
+      final normalizedTransactionDate = _normalizeDate(transaction.createdAt);
+      if (normalizedTransactionDate.isBefore(todayDate)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('You can\'t edit transactions older than the current day.')),
+        );
+        return;
+      }
+      onEditPressed(); // Call original if check passes
+    };
+
+    final VoidCallback effectiveOnDeletePressed = () {
+      final normalizedTransactionDate = _normalizeDate(transaction.createdAt);
+      if (normalizedTransactionDate.isBefore(todayDate)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('You can\'t delete transactions older than the current day.')),
+        );
+        return;
+      }
+      onDeletePressed(); // Call original if check passes
+    };
 
     return Card(
       color: cardBackgroundColor,
@@ -53,7 +87,7 @@ class TransactionInfoCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-            if (transaction.note.isNotEmpty) ...[
+            if (transaction.note != null && transaction.note!.isNotEmpty) ...[
               Text(
                 'Notes: ${transaction.note}',
                 style: const TextStyle(fontSize: 16,fontWeight: FontWeight.bold),
@@ -85,7 +119,7 @@ class TransactionInfoCard extends StatelessWidget {
                 TextButton.icon(
                   icon: const Icon(Icons.edit),
                   label: const Text('Edit'),
-                  onPressed: onEditPressed,
+                  onPressed: effectiveOnEditPressed, // Use effective callback
                   style: TextButton.styleFrom(
                     foregroundColor: Theme.of(context).colorScheme.primary,
                   ),
@@ -94,7 +128,7 @@ class TransactionInfoCard extends StatelessWidget {
                 TextButton.icon(
                   icon: const Icon(Icons.delete),
                   label: const Text('Delete'),
-                  onPressed: onDeletePressed,
+                  onPressed: effectiveOnDeletePressed, // Use effective callback
                   style: TextButton.styleFrom(
                     foregroundColor: Theme.of(context).colorScheme.error,
                   ),
@@ -107,21 +141,3 @@ class TransactionInfoCard extends StatelessWidget {
     );
   }
 }
-
-// Example Usage (for demonstration, you'd use this in a list view usually):
-/*
-TransactionInfoCard(
-  dateTime: DateTime.now(),
-  notes: 'Bought groceries for the week. This is a longer note to see how it wraps and handles overflow.',
-  amount: 50.75,
-  transactionType: TransactionType.expense,
-  onEditPressed: () {
-    print('Edit pressed');
-    // Navigate to AddEditTransactionScreen with mode: ScreenMode.edit and transaction data
-  },
-  onDeletePressed: () {
-    print('Delete pressed');
-    // Show confirmation dialog and then delete
-  },
-)
-*/

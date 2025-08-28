@@ -3,7 +3,7 @@ import 'package:payments_tracker_flutter/database_helper.dart';
 import 'add_edit_transaction_screen.dart';
 import 'transactions_log_screen.dart';
 import 'monthly_summary_screen.dart';
-import 'database_helper.dart';
+
 // Placeholder screen for Details
 class DetailsScreen extends StatelessWidget {
   const DetailsScreen({super.key});
@@ -16,8 +16,6 @@ class DetailsScreen extends StatelessWidget {
     );
   }
 }
-
-
 
 // Placeholder screen for Add operation
 class AddScreen extends StatelessWidget {
@@ -41,6 +39,7 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   Future<double> _currentBalanceFuture = DatabaseHelper.instance.getTodayBalance();
+  final TextEditingController _resetConfirmController = TextEditingController();
 
   @override
   void initState() {
@@ -54,14 +53,112 @@ class _MainScreenState extends State<MainScreen> {
     });
   }
 
+  Future<void> _showResetConfirmationDialog() async {
+    _resetConfirmController.clear();
+    bool isButtonEnabled = false;
+
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false, 
+      builder: (BuildContext context) {
+        return StatefulBuilder( 
+          builder: (context, setStateDialog) {
+            return AlertDialog(
+              title: const Text('Confirm Reset'),
+              content: SingleChildScrollView(
+                child: ListBody(
+                  children: <Widget>[
+                    const Text('This action is irreversible and will delete all data.'),
+                    const Text('Please type "I am sure" to confirm.'),
+                    TextField(
+                      controller: _resetConfirmController,
+                      decoration: const InputDecoration(hintText: 'I am sure'),
+                      onChanged: (text) {
+                        setStateDialog(() {
+                          isButtonEnabled = text == 'I am sure';
+                        });
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              actions: <Widget>[
+                TextButton(
+                  child: const Text('Cancel'),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                ),
+                TextButton(
+                  style: TextButton.styleFrom(foregroundColor: Colors.red),
+                  onPressed: isButtonEnabled
+                      ? () {
+                          Navigator.of(context).pop(); 
+                          _performFullReset();
+                        }
+                      : null, 
+                  child: const Text('Confirm Reset'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _performFullReset() async {
+    try {
+      await DatabaseHelper.instance.resetDatabase();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Database has been reset successfully!')),
+        );
+        _loadBalance(); 
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error resetting database: $e')),
+        );
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _resetConfirmController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Periodically refresh the balance or use a state management solution
-    // for more complex scenarios. For simplicity, we can refresh on build.
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Summary'),
+        title: const Text('Payments Tracker'),
         centerTitle: true,
+        actions: <Widget>[
+          PopupMenuButton<String>(
+            onSelected: (value) {
+              if (value == 'reset') {
+                _showResetConfirmationDialog();
+              }
+            },
+            itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+              const PopupMenuItem<String>(
+                value: 'reset',
+                child: Row(
+                  children: [
+                    Icon(Icons.warning_amber_rounded, color: Colors.red),
+                    SizedBox(width: 8),
+                    Text('Reset All Data'),
+                  ],
+                ),
+              ),
+            ],
+            icon: const Icon(Icons.more_vert),
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -69,93 +166,100 @@ class _MainScreenState extends State<MainScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
+              const Text(
+                'Current Balance', 
+                style: TextStyle(fontSize: 18, color: Colors.grey),
+              ),
               FutureBuilder<double>(
                 future: _currentBalanceFuture,
                 builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const CircularProgressIndicator();
-                  } else if (snapshot.hasError) {
-                    return Text('Error: ${snapshot.error}');
-                  } else {
-                    final balance = snapshot.data ?? 0.0;
-                    final color = balance >= 0 ? Colors.green : Colors.red;
-                    return Text(
-                      '${balance.toStringAsFixed(2)}',
-                      style: TextStyle(
-                        fontSize: 30,
-                        fontWeight: FontWeight.w600,
-                        color: color,
-                      ),
-                    );
-                  }
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const CircularProgressIndicator();
+                    } else if (snapshot.hasError) {
+                      return Text('Error: ${snapshot.error}');
+                    } else {
+                      final balance = snapshot.data ?? 0.0;
+                      final color = balance >= 0 ? Colors.green.shade700 : Colors.red.shade700;
+                      return Text(
+                        '${balance.toStringAsFixed(2)}',
+                        style: TextStyle(
+                          fontSize: 36, 
+                          fontWeight: FontWeight.w600,
+                          color: color,
+                        ),
+                      );
+                    }
                 },
               ),
               const SizedBox(height: 40),
-              ElevatedButton(
+              ElevatedButton.icon(
+                icon: const Icon(Icons.list_alt_outlined),
+                label: const Text('Transactions Log'),
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 15.0, horizontal: 24.0),
                   shape: const StadiumBorder(),
-                  minimumSize: const Size(220, 50),
+                  minimumSize: const Size(250, 50),
                 ),
-                child: const Text('Details'),
                 onPressed: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (context) => const TransactionsLogScreen()),
-                  ).then((_) => _loadBalance()); // Refresh balance after returning
+                  ).then((_) => _loadBalance());
                 },
               ),
               const SizedBox(height: 20),
-              ElevatedButton(
+              ElevatedButton.icon(
+                icon: const Icon(Icons.calendar_today_outlined),
+                label: const Text('Monthly Summary'),
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 15.0, horizontal: 24.0),
                   shape: const StadiumBorder(),
-                  minimumSize: const Size(220, 50),
+                  minimumSize: const Size(250, 50),
                 ),
-                child: const Text('Monthly Summary'),
                 onPressed: () {
-                  // Navigator.push(
-                  //   context,
-                  //   MaterialPageRoute(builder: (context) => const MonthlySummaryScreen()),
-                  // );
                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                    backgroundColor: Colors.orange,
-
-                    content: Text("Not implemented in this version"),
+                    backgroundColor: Colors.orangeAccent,
+                    content: Text("Monthly Summary: Not implemented yet."),
                   ));
                 },
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 30),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  ElevatedButton(
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.add_circle_outline_rounded),
+                    label: const Text('Income'),
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 15.0, horizontal: 24.0),
                       shape: const StadiumBorder(),
-                      minimumSize: const Size(100, 50),
+                      backgroundColor: Colors.green.shade600,
+                      foregroundColor: Colors.white,
+                      minimumSize: const Size(135, 50),
                     ),
-                    child: const Text('+'),
                     onPressed: () {
                       Navigator.push(
                         context,
                         MaterialPageRoute(builder: (context) => const AddEditTransactionScreen(transactionType: TransactionType.income, mode: ScreenMode.add)),
-                      ).then((_) => _loadBalance()); // Refresh balance after returning
+                      ).then((_) => _loadBalance());
                     },
                   ),
-                  const SizedBox(width: 30),
-                  ElevatedButton(
+                  const SizedBox(width: 20), 
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.remove_circle_outline_rounded),
+                    label: const Text('Expense'),
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 15.0, horizontal: 24.0),
                       shape: const StadiumBorder(),
-                      minimumSize: const Size(100, 50),
+                      backgroundColor: Colors.red.shade500,
+                      foregroundColor: Colors.white,
+                      minimumSize: const Size(135, 50),
                     ),
-                    child: const Text('-'),
                     onPressed: () {
                       Navigator.push(
                         context,
                         MaterialPageRoute(builder: (context) => const AddEditTransactionScreen(transactionType: TransactionType.expense, mode: ScreenMode.add)),
-                      ).then((_) => _loadBalance()); // Refresh balance after returning
+                      ).then((_) => _loadBalance());
                     },
                   ),
                 ],

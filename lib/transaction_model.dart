@@ -1,13 +1,13 @@
 class TransactionModel {
   final int? id;
   final double amount;
-  final String note;
+  final String? note;
   final DateTime createdAt;
 
   TransactionModel({
     this.id,
     required this.amount,
-    required this.note,
+    this.note,
     required this.createdAt,
   });
 
