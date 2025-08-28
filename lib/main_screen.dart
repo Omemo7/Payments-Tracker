@@ -32,19 +32,6 @@ class AddScreen extends StatelessWidget {
   }
 }
 
-// Placeholder screen for Subtract operation
-class SubtractScreen extends StatelessWidget {
-  const SubtractScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Subtract Operation')),
-      body: const Center(child: Text('Subtract Screen')),
-    );
-  }
-}
-
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
 
@@ -53,7 +40,7 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
-  Future<double> _currentBalanceFuture = DatabaseHelper.instance.getCurrentBalance();
+  Future<double> _currentBalanceFuture = DatabaseHelper.instance.getTodayBalance();
 
   @override
   void initState() {
@@ -63,7 +50,7 @@ class _MainScreenState extends State<MainScreen> {
 
   Future<void> _loadBalance() async {
     setState(() {
-      _currentBalanceFuture = DatabaseHelper.instance.getCurrentBalance();
+      _currentBalanceFuture = DatabaseHelper.instance.getTodayBalance();
     });
   }
 

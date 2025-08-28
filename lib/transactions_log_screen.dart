@@ -54,7 +54,7 @@ class _TransactionsLogScreenState extends State<TransactionsLogScreen> {
                     itemBuilder: (context, index) {
                       final transaction = transactionsToShow[index];
                       return FutureBuilder<double>(
-                        future: DatabaseHelper.instance.getCummulativeBalanceByTransactionId(transaction.id!),
+                        future: DatabaseHelper.instance.getBalanceUntilTransactionByTransactionId(transaction.id!),
                         builder: (context, snapshot) {
                           if (snapshot.connectionState == ConnectionState.waiting) {
                             return const Center(child: CircularProgressIndicator());
