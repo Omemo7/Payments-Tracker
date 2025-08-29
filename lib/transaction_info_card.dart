@@ -78,41 +78,40 @@ class TransactionInfoCard extends StatelessWidget {
               children: [
                 Text(
                   'Date: ${DateFormat.yMd().format(transaction.createdAt)}',
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                  style: const TextStyle(fontSize: 16),
                 ),
                 Text(
                   'Time: ${DateFormat.jm().format(transaction.createdAt)}',
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                  style: const TextStyle(fontSize: 16),
                 ),
               ],
             ),
             const SizedBox(height: 12),
+            Text(
+              'Amount: $amountPrefix${transaction.amount.toStringAsFixed(2)}',
+              style: const TextStyle(
+                fontSize: 20, // Updated size
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            Text(
+              'Balance: ${balance.toStringAsFixed(2)}',
+              style: const TextStyle(
+                fontSize: 20, // Updated size
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+
+            const SizedBox(height: 12),
             if (transaction.note != null && transaction.note!.isNotEmpty) ...[
               Text(
                 'Notes: ${transaction.note}',
-                style: const TextStyle(fontSize: 16,fontWeight: FontWeight.bold),
+                style: const TextStyle(fontSize: 20), // Updated style
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 12),
             ],
-            Text(
-              'Amount: $amountPrefix${transaction.amount.toStringAsFixed(2)}',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-
-              ),
-            ),
-            Text(
-              'Balance: ${balance.toStringAsFixed(2)}',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-
-              ),
-            ),
-            const SizedBox(height: 12),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: <Widget>[

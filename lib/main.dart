@@ -5,7 +5,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   final db = await DatabaseHelper.instance.database;
-  print("Database created with transactions table ✅");
+  
   await DatabaseHelper.instance.autoCloseDay();
   runApp(const MyApp());
 }

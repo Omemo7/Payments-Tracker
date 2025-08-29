@@ -70,7 +70,7 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
     if (addedTransactionId > 0) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Transaction $addedTransactionId added successfully')),
+          SnackBar(content: Text('Transaction added successfully')),
         );
         Navigator.pop(context, true);
       }
@@ -135,9 +135,7 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
     }
   }
   
-  // _selectDate and _selectTime methods can be kept for potential future use 
-  // or removed if definitely not needed.
-  // For now, they are just not called from the UI.
+  // _selectDate and _selectTime methods are kept but not called from UI.
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
       context: context,
@@ -189,6 +187,7 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
     appBarTitle += (currentEffectiveType == TransactionType.income ? ' (Income)' : ' (Expense)');
     
     final String buttonText = widget.mode == ScreenMode.add ? 'Add' : 'Save Changes';
+    final Color iconColor = Theme.of(context).colorScheme.primary;
 
     return Scaffold(
       appBar: AppBar(
@@ -201,38 +200,46 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Text(
-                'Date: ${DateFormat.yMd().format(_currentDateTime)}',
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ListTile(
+                leading: Icon(Icons.calendar_today_outlined, color: iconColor),
+                title: Text('Date: ${DateFormat.yMd().format(_currentDateTime)}', style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w500)),
+                contentPadding: EdgeInsets.zero,
+                dense: true,
+                onTap: null, // Not editable
               ),
-              const SizedBox(height: 8),
-              Text(
-                'Time: ${DateFormat.jm().format(_currentDateTime)}',
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              const SizedBox(height: 12.0),
+              ListTile(
+                leading: Icon(Icons.access_time_outlined, color: iconColor),
+                title: Text('Time: ${DateFormat.jm().format(_currentDateTime)}', style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w500)),
+                contentPadding: EdgeInsets.zero,
+                dense: true,
+                onTap: null, // Not editable
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 24.0),
               TextField(
                 controller: _notesController,
                 decoration: const InputDecoration(
-                  labelText: 'Notes (Optional)', // Updated label
+                  labelText: 'Notes (Optional)',
                   border: OutlineInputBorder(),
+                  contentPadding: EdgeInsets.symmetric(horizontal: 12.0, vertical: 16.0),
                 ),
                 maxLines: 3,
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 24.0),
               TextField(
                 controller: _amountController,
                 decoration: InputDecoration(
                   labelText: 'Amount',
                   border: const OutlineInputBorder(),
                   prefixText: currentEffectiveType == TransactionType.income ? '+ ' : '- ',
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 16.0),
                 ),
                 keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: false),
                 inputFormatters: <TextInputFormatter>[
-                  FilteringTextInputFormatter.allow(RegExp(r'''^\d*\.?\d{0,2}''')),
+                  FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
                 ],
               ),
-              const SizedBox(height: 30),
+              const SizedBox(height: 30.0),
               Center(
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(

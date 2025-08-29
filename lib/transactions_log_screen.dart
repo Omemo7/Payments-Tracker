@@ -143,6 +143,28 @@ class _TransactionsLogScreenState extends State<TransactionsLogScreen> {
       ),
       body: Column(
         children: [
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Wrap( 
+              spacing: 8.0,
+              runSpacing: 4.0,
+              alignment: WrapAlignment.center,
+              children: [
+                ElevatedButton(
+                  onPressed: _canGoToOlder() ? _goToOlderDay : null,
+                  child: const Text('Older Day'),
+                ),
+                ElevatedButton(
+                  onPressed: (_normalizeDate(_currentDisplayedDate).isAtSameMomentAs(_today)) ? null : _goToToday,
+                  child: const Text('Go to Today'),
+                ),
+                ElevatedButton(
+                  onPressed: _canGoToNewer() ? _goToNewerDay : null,
+                  child: const Text('Newer Day'),
+                ),
+              ],
+            ),
+          ),
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
@@ -210,28 +232,6 @@ class _TransactionsLogScreenState extends State<TransactionsLogScreen> {
                             });
                         },
                       ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Wrap( 
-              spacing: 8.0,
-              runSpacing: 4.0,
-              alignment: WrapAlignment.center,
-              children: [
-                ElevatedButton(
-                  onPressed: _canGoToOlder() ? _goToOlderDay : null,
-                  child: const Text('Older Day'),
-                ),
-                ElevatedButton(
-                  onPressed: (_normalizeDate(_currentDisplayedDate).isAtSameMomentAs(_today)) ? null : _goToToday,
-                  child: const Text('Go to Today'),
-                ),
-                ElevatedButton(
-                  onPressed: _canGoToNewer() ? _goToNewerDay : null,
-                  child: const Text('Newer Day'),
-                ),
-              ],
-            ),
           ),
         ],
       ),
