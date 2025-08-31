@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // Added for input formatters
 import 'package:intl/intl.dart'; // For date formatting
-import 'package:payments_tracker_flutter/transaction_model.dart';
-import 'database_helper.dart';
+import 'package:payments_tracker_flutter/models/transaction_model.dart';
+
+import '../database/tables/transaction_table.dart';
 
 // Define Enums
 enum TransactionType { income, expense }
@@ -59,7 +60,7 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
       createdAt: _currentDateTime, // This is DateTime.now() for add mode
     );
 
-    final int addedTransactionId = await DatabaseHelper.instance.insertTransaction(txn);
+    final int addedTransactionId = await TransactionTable.insertTransaction(txn);
     if (addedTransactionId > 0) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -85,7 +86,7 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
       createdAt: _currentDateTime, // This is the original createdAt for edit mode
     );
 
-    final int rowsAffected = await DatabaseHelper.instance.updateTransaction(updatedTxn);
+    final int rowsAffected = await TransactionTable.updateTransaction(updatedTxn);
     if (rowsAffected > 0) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

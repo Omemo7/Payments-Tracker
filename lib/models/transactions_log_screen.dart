@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:payments_tracker_flutter/database_helper.dart';
-import 'package:payments_tracker_flutter/transaction_info_card.dart';
-import 'package:payments_tracker_flutter/add_edit_transaction_screen.dart'; // For TransactionType
-import 'package:payments_tracker_flutter/transaction_model.dart';
 
+import 'package:payments_tracker_flutter/screens/transaction_info_card.dart';
+import 'package:payments_tracker_flutter/screens/add_edit_transaction_screen.dart'; // For TransactionType
+import 'package:payments_tracker_flutter/models/transaction_model.dart';
+import 'package:payments_tracker_flutter/database/tables/transaction_table.dart';
 class TransactionsLogScreen extends StatefulWidget {
   const TransactionsLogScreen({super.key});
 
@@ -36,7 +36,7 @@ class _TransactionsLogScreenState extends State<TransactionsLogScreen> {
 
     if (isInitialLoad || _sortedDaysWithTransactions.isEmpty) {
       // Refresh sorted days on initial load or if it becomes empty (e.g., after deleting all transactions for a day)
-      _sortedDaysWithTransactions = await DatabaseHelper.instance.getUniqueTransactionDates();
+      _sortedDaysWithTransactions = await TransactionTable.getUniqueTransactionDates();
     }
     
     // Update AppBar title dynamically if needed, though FutureBuilder rebuilds UI
@@ -45,7 +45,7 @@ class _TransactionsLogScreenState extends State<TransactionsLogScreen> {
       setState(() {}); 
     }
 
-    return DatabaseHelper.instance.getTransactionsForDate(_currentDisplayedDate);
+    return TransactionTable.getTransactionsForDate(_currentDisplayedDate);
   }
 
   void _triggerDataLoad(DateTime dateToLoad, {bool refreshSortedDays = false}) {
@@ -186,7 +186,7 @@ class _TransactionsLogScreenState extends State<TransactionsLogScreen> {
                       final transaction = transactionsForDisplayedDate[index];
 
                       return FutureBuilder<double>(
-                        future: DatabaseHelper.instance.getBalanceUntilTransactionByTransactionId(transaction.id!),
+                        future: TransactionTable.getBalanceUntilTransactionByTransactionId(transaction.id!),
                         builder: (context, balanceSnapshot) {
 
                           return TransactionInfoCard(
@@ -236,7 +236,7 @@ class _TransactionsLogScreenState extends State<TransactionsLogScreen> {
                               );
 
                               if (confirmDelete == true && transaction.id != null) {
-                                await DatabaseHelper.instance.deleteTransaction(transaction.id!);
+                                await TransactionTable.deleteTransaction(transaction.id!);
 
                                 _triggerDataLoad(_currentDisplayedDate, refreshSortedDays: true); 
                               }

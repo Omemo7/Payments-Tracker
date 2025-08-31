@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:payments_tracker_flutter/database_helper.dart';
+import 'package:payments_tracker_flutter/database/database_helper.dart';
 import 'add_edit_transaction_screen.dart';
-import 'transactions_log_screen.dart';
+import '../models/transactions_log_screen.dart';
 import 'monthly_summary_screen.dart';
+import '../database/tables/transaction_table.dart';
 
 // Placeholder screen for Details
 class DetailsScreen extends StatelessWidget {
@@ -38,7 +39,7 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
-  Future<double> _currentBalanceFuture = DatabaseHelper.instance.getTodayBalance();
+  Future<double> _currentBalanceFuture = TransactionTable.getTodayBalance();
   final TextEditingController _resetConfirmController = TextEditingController();
 
   @override
@@ -49,7 +50,7 @@ class _MainScreenState extends State<MainScreen> {
 
   Future<void> _loadBalance() async {
     setState(() {
-      _currentBalanceFuture = DatabaseHelper.instance.getTodayBalance();
+      _currentBalanceFuture = TransactionTable.getTodayBalance();
     });
   }
 

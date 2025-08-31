@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart'; // For date formatting
 // Assuming TransactionType is in add_edit_transaction_screen.dart
 // If it's moved to a common file, this import will need to change.
-import './add_edit_transaction_screen.dart'; // For TransactionType
-import 'transaction_model.dart';
+import 'add_edit_transaction_screen.dart'; // For TransactionType
+import '../models/transaction_model.dart';
 
 class TransactionInfoCard extends StatelessWidget {
   final TransactionModel transaction;

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:payments_tracker_flutter/main_screen.dart';
-import 'database_helper.dart';
+import 'package:payments_tracker_flutter/screens/main_screen.dart';
+import 'database/database_helper.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 

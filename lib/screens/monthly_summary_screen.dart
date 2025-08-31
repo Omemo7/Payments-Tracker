@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 // Assuming TransactionType is in add_edit_transaction_screen.dart
 // If you moved it to a common file, update the import path.
-import './add_edit_transaction_screen.dart' show TransactionType;
+import 'add_edit_transaction_screen.dart' show TransactionType;
 
 class MonthlySummaryScreen extends StatefulWidget {
   const MonthlySummaryScreen({super.key});
