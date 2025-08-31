@@ -51,13 +51,6 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
   }
 
   Future<void> _addTransaction() async {
-    try {
-      print('Running autoCloseDay before adding a new transaction...');
-      await DatabaseHelper.instance.autoCloseDay();
-      print('autoCloseDay completed.');
-    } catch (e) {
-      print('Error during autoCloseDay before adding transaction: $e');
-    }
 
     double unsignedAmount = double.parse(_amountController.text);
     TransactionModel txn = TransactionModel(

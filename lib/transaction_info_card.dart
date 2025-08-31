@@ -21,7 +21,7 @@ class TransactionInfoCard extends StatelessWidget {
     required VoidCallback onEditPressed, // Original callbacks
     required VoidCallback onDeletePressed,
     required this.todayDate,
-  })  : 
+  })  :
         // Wrap the original callbacks with the date check
         this.onEditPressed = onEditPressed,
         this.onDeletePressed = onDeletePressed;
@@ -38,30 +38,7 @@ class TransactionInfoCard extends StatelessWidget {
     final String amountPrefix =
         transactionType == TransactionType.income ? '+' : '';
 
-    // Effective callbacks with date check
-    final VoidCallback effectiveOnEditPressed = () {
-      final normalizedTransactionDate = _normalizeDate(transaction.createdAt);
-      if (normalizedTransactionDate.isBefore(todayDate)) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('You can\'t edit transactions older than the current day.')),
-        );
-        return;
-      }
-      onEditPressed(); // Call original if check passes
-    };
 
-    final VoidCallback effectiveOnDeletePressed = () {
-      final normalizedTransactionDate = _normalizeDate(transaction.createdAt);
-      if (normalizedTransactionDate.isBefore(todayDate)) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('You can\'t delete transactions older than the current day.')),
-        );
-        return;
-      }
-      onDeletePressed(); // Call original if check passes
-    };
 
     return Card(
       color: cardBackgroundColor,
@@ -118,7 +95,7 @@ class TransactionInfoCard extends StatelessWidget {
                 TextButton.icon(
                   icon: const Icon(Icons.edit),
                   label: const Text('Edit'),
-                  onPressed: effectiveOnEditPressed, // Use effective callback
+                  onPressed: onEditPressed,
                   style: TextButton.styleFrom(
                     foregroundColor: Theme.of(context).colorScheme.primary,
                   ),
@@ -127,7 +104,7 @@ class TransactionInfoCard extends StatelessWidget {
                 TextButton.icon(
                   icon: const Icon(Icons.delete),
                   label: const Text('Delete'),
-                  onPressed: effectiveOnDeletePressed, // Use effective callback
+                  onPressed: onDeletePressed,
                   style: TextButton.styleFrom(
                     foregroundColor: Theme.of(context).colorScheme.error,
                   ),

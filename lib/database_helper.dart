@@ -11,7 +11,7 @@ class DatabaseHelper {
 
   // Define table names as constants
   static const String tableTransactions = 'transactions';
-  static const String tableDailyClosingInfo = 'daily_closing_info';
+  // static const String tableDailyClosingInfo = 'daily_closing_info'; // Removed
 
   DatabaseHelper._init();
 
@@ -37,7 +37,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 2, // <- incremented from 1 to 2
+      version: 3, // <- incremented from 2 to 3
       onCreate: (Database db, int version) async {
         // --- Added Logging ---
         print('DatabaseHelper: onCreate called. Version: $version. Creating tables...');
@@ -56,21 +56,17 @@ class DatabaseHelper {
 
   }
   Future _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    if (oldVersion < 2) {
-      // Version 2 adds dailyClosingInfo table
-      await db.execute('''
-      CREATE TABLE daily_closing_info (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        closing_balance REAL NOT NULL,
-        closing_txn_id INTEGER NOT NULL,
-        closing_date TEXT NOT NULL UNIQUE,
-        FOREIGN KEY (closing_txn_id) REFERENCES transactions(id)
-      )
-    ''');
+    // if (oldVersion < 2) { // Removed block for creating daily_closing_info
+    // }
+
+    if (oldVersion < 3) {
+
+      await db.execute('DROP TABLE IF EXISTS daily_closing_info');
+      print('DatabaseHelper: Upgraded to V3 - Dropped daily_closing_info table');
     }
 
     // You can handle future upgrades here:
-    // if (oldVersion < 3) { ... }
+    // if (oldVersion < 4) { ... }
   }
 
 
@@ -84,15 +80,7 @@ class DatabaseHelper {
       )
     '''); // Removed isLocked as it was not in the original user schema from previous interaction context. Add if needed.
 
-    await db.execute('''
-    CREATE TABLE daily_closing_info (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      closing_balance REAL NOT NULL,
-      closing_txn_id INTEGER NOT NULL,
-      closing_date TEXT NOT NULL UNIQUE,
-      FOREIGN KEY (closing_txn_id) REFERENCES transactions(id)
-    )
-  ''');
+    // Removed creation of daily_closing_info table
   }
 
   // ---------------- CRUD METHODS ----------------
@@ -135,6 +123,20 @@ class DatabaseHelper {
     return 0.0;
   }
 
+  Future<double> getTodayBalance() async {
+    final db = await instance.database;
+    final now = DateTime.now();
+    final today = DateFormat('yyyy-MM-dd').format(now);
+    final result = await db.rawQuery('''
+    SELECT SUM(amount) as balance
+    FROM transactions
+    WHERE DATE(createdAt) = ?
+  ''', [today]);
+    if (result.isNotEmpty && result.first['balance'] != null) {
+      return result.first['balance'] as double;
+    }
+    return 0.0;
+  }
 
   // Update transaction
   Future<int> updateTransaction(TransactionModel txn) async {
@@ -175,16 +177,13 @@ class DatabaseHelper {
   /// Fetches all transactions for a specific date.
   Future<List<TransactionModel>> getTransactionsForDate(DateTime date) async {
     final db = await instance.database;
-    // Format the date to 'YYYY-MM-DD' for the SQL query
-    // Using substring to avoid dependency on intl for this core DB function if not strictly needed
-    // and to match existing style in closeDayForDate (e.g. .substring(0,10))
     String dateString = date.toIso8601String().substring(0, 10);
 
     final List<Map<String, dynamic>> maps = await db.query(
       tableTransactions,
       where: 'DATE(createdAt) = ?',
       whereArgs: [dateString],
-      orderBy: 'createdAt DESC', // Optional: order transactions within the day, newest first
+      orderBy: 'createdAt DESC', 
     );
 
     if (maps.isEmpty) {
@@ -195,185 +194,7 @@ class DatabaseHelper {
 
   // ---- End of Day-by-Day Pagination Methods ----
 
-
-  Future<void> autoCloseDay() async {
-    final db = await DatabaseHelper.instance.database;
-    DateTime today = DateTime.now(); // Get today's date
-
-    // Get last closing date
-    final lastClosing = await db.query(
-      tableDailyClosingInfo,
-      orderBy: 'closing_date DESC',
-      limit: 1,
-    );
-
-    DateTime lastClosedDate;
-    if (lastClosing.isNotEmpty) {
-      lastClosedDate = DateTime.parse(lastClosing.first['closing_date'] as String);
-    } else {
-      // If no closing info exists (e.g., after a reset or first run),
-      // we don't want to backfill from an ancient date.
-      // Start from 2 days ago relative to today's date components
-      // to ensure the loop correctly processes up to yesterday if needed.
-      lastClosedDate = DateTime(today.year, today.month, today.day - 2);
-    }
-
-    // Fill missing days up to yesterday
-    // The loop condition ensures it processes days strictly *before* (today - 1 day)
-    DateTime targetDateForLoop = DateTime(today.year, today.month, today.day - 1);
-    while (lastClosedDate.isBefore(targetDateForLoop)) {
-      final nextDay = lastClosedDate.add(const Duration(days: 1));
-      final nextDayStr = nextDay.toIso8601String().split("T")[0];
-
-      // Get transactions for this day
-      final txns = await db.query(
-        tableTransactions,
-        where: "DATE(createdAt) = ?",
-        whereArgs: [nextDayStr],
-        orderBy: "id DESC", // Assuming higher ID means later transaction for closing
-      );
-
-      if (txns.isNotEmpty) {
-        final lastTxn = txns.first;
-
-        final prevClosingForAuto = await db.query(
-          tableDailyClosingInfo,
-          orderBy: 'closing_date DESC',
-          where: 'closing_date < ?',
-          whereArgs: [nextDayStr],
-          limit: 1,
-        );
-        double prevBalanceForAuto = prevClosingForAuto.isNotEmpty
-            ? prevClosingForAuto.first['closing_balance'] as double
-            : 0.0;
-
-        final sumForDay = await db.rawQuery(
-            'SELECT SUM(amount) as dailyTotal FROM $tableTransactions WHERE DATE(createdAt) = ?',
-            [nextDayStr]
-        );
-        double dailyTotal = (sumForDay.first['dailyTotal'] ?? 0.0) as double;
-        double closingBalanceForDay = prevBalanceForAuto + dailyTotal;
-
-        await db.insert(tableDailyClosingInfo, {
-          'closing_date': nextDayStr,
-          'closing_balance': closingBalanceForDay,
-          'closing_txn_id': lastTxn['id'],
-        },
-            conflictAlgorithm: ConflictAlgorithm.replace
-        );
-
-      } else {
-        // If no transactions, carry forward the previous day's balance
-        final prevClosingForAuto = await db.query(
-          tableDailyClosingInfo,
-          orderBy: 'closing_date DESC',
-          where: 'closing_date < ?',
-          whereArgs: [nextDayStr],
-          limit: 1,
-        );
-        double prevBalanceForAuto = prevClosingForAuto.isNotEmpty
-            ? prevClosingForAuto.first['closing_balance'] as double
-            : 0.0;
-        await db.insert(tableDailyClosingInfo, {
-          'closing_date': nextDayStr,
-          'closing_balance': prevBalanceForAuto,
-          'closing_txn_id': 0,
-        },
-            conflictAlgorithm: ConflictAlgorithm.replace);
-      }
-      lastClosedDate = nextDay;
-    }
-  }
-
-
-  Future<void> closeDayForDate(DateTime day) async {
-    final db = await instance.database;
-    final dayStr = day.toIso8601String().substring(0, 10);
-
-    final lastTxnQuery = await db.query(
-      tableTransactions,
-      where: 'date(createdAt) = ?',
-      whereArgs: [dayStr],
-      orderBy: 'id DESC', 
-      limit: 1,
-    );
-
-    if (lastTxnQuery.isEmpty) {
-        final prevClosing = await db.query(
-          tableDailyClosingInfo,
-          orderBy: 'closing_date DESC',
-          where: 'closing_date < ?',
-          whereArgs: [dayStr],
-          limit: 1,
-        );
-        final prevBalance = prevClosing.isNotEmpty
-            ? prevClosing.first['closing_balance'] as double
-            : 0.0;
-        
-        await db.insert(tableDailyClosingInfo, {
-          'closing_date': dayStr,
-          'closing_balance': prevBalance, 
-          'closing_txn_id': 0, 
-        },
-        conflictAlgorithm: ConflictAlgorithm.replace);
-        return; 
-    }
-
-    final lastTxnId = lastTxnQuery.first['id'] as int;
-
-    final prevClosing = await db.query(
-      tableDailyClosingInfo,
-      orderBy: 'closing_date DESC',
-      where: 'closing_date < ?', 
-      whereArgs: [dayStr],
-      limit: 1,
-    );
-    final prevBalance = prevClosing.isNotEmpty
-        ? prevClosing.first['closing_balance'] as double
-        : 0.0; 
-
-    final sumResult = await db.rawQuery(
-      'SELECT SUM(amount) as total FROM $tableTransactions WHERE date(createdAt) = ?',
-      [dayStr],
-    );
-    final todayTotal = (sumResult.first['total'] ?? 0.0) as double;
-
-
-    final closingBalance = prevBalance + todayTotal;
-
-    await db.insert(
-      tableDailyClosingInfo,
-      {
-        'closing_balance': closingBalance,
-        'closing_txn_id': lastTxnId,
-        'closing_date': dayStr,
-      },
-      conflictAlgorithm: ConflictAlgorithm.replace, 
-    );
-  }
-  Future<double> getTodayBalance() async {
-    final db = await instance.database;
-    final todayStr = DateTime.now().toIso8601String().substring(0, 10);
-
-    final lastClosing = await db.query(
-      tableDailyClosingInfo,
-      where: 'closing_date < ?',
-      whereArgs: [todayStr],
-      orderBy: 'closing_date DESC',
-      limit: 1,
-    );
-    final lastBalance = lastClosing.isNotEmpty
-        ? lastClosing.first['closing_balance'] as double
-        : 0.0;
-
-    final sumResult = await db.rawQuery(
-      'SELECT SUM(amount) as total FROM $tableTransactions WHERE date(createdAt) = ?',
-      [todayStr],
-    );
-    final todayTotal = (sumResult.first['total'] ?? 0.0) as double;
-
-    return lastBalance + todayTotal;
-  }
+  // Methods related to daily_closing_info (autoCloseDay, closeDayForDate, getTodayBalance) have been removed.
 
   Future<void> resetDatabase() async {
     final db = await instance.database;
@@ -381,19 +202,14 @@ class DatabaseHelper {
 
     // Clear all data from the tables
     batch.delete(tableTransactions);
-    batch.delete(tableDailyClosingInfo);
+    // batch.delete(tableDailyClosingInfo); // Removed
 
     // Reset auto-increment counters for the tables
-    // This makes the next ID inserted into these tables start from 1.
     batch.rawUpdate("UPDATE sqlite_sequence SET seq = 0 WHERE name = '$tableTransactions';");
-    batch.rawUpdate("UPDATE sqlite_sequence SET seq = 0 WHERE name = '$tableDailyClosingInfo';");
-    // Note: If a table was empty and never had an auto-incremented ID,
-    // its entry might not be in sqlite_sequence. This is generally fine.
-    // The command won't error; it just won't update anything for that table.
-
+    // batch.rawUpdate("UPDATE sqlite_sequence SET seq = 0 WHERE name = '$tableDailyClosingInfo';"); // Removed
+    
     await batch.commit(noResult: true);
-    // --- Modified Logging ---
-    print('DatabaseHelper: resetDatabase EXECUTED. Tables cleared, sequences reset. DB file should NOT have been deleted by this operation.');
+    print('DatabaseHelper: resetDatabase EXECUTED. Tables cleared, sequences reset.');
   }
 
 }
