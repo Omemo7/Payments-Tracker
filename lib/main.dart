@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:payments_tracker_flutter/screens/main_screen.dart';
 import 'database/database_helper.dart';
+import 'package:payments_tracker_flutter/screens/choose_account_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -20,7 +21,7 @@ class MyApp extends StatelessWidget {
 
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      home: const MainScreen(),
+      home: const ChooseAccountScreen(),
     );
   }
 }

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-import 'package:payments_tracker_flutter/screens/transaction_info_card.dart';
+import 'package:payments_tracker_flutter/widgets/transaction_info_card.dart';
 import 'package:payments_tracker_flutter/screens/add_edit_transaction_screen.dart'; // For TransactionType
 import 'package:payments_tracker_flutter/models/transaction_model.dart';
 import 'package:payments_tracker_flutter/database/tables/transaction_table.dart';

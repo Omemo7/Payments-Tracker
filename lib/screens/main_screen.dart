@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:payments_tracker_flutter/database/database_helper.dart';
 import 'add_edit_transaction_screen.dart';
-import '../models/transactions_log_screen.dart';
+import 'transactions_log_screen.dart';
 import 'monthly_summary_screen.dart';
 import '../database/tables/transaction_table.dart';
 
