@@ -3,12 +3,14 @@ import 'package:payments_tracker_flutter/models/account_model.dart'; // Assuming
 
 class AccountCard extends StatelessWidget {
   final AccountModel account;
+  final double balance;
   final VoidCallback onTap;
   final VoidCallback onEditPressed; // New callback for edit
   final VoidCallback onDeletePressed; // New callback for delete
 
   const AccountCard({
     Key? key,
+    required this.balance,
     required this.account,
     required this.onTap,
     required this.onEditPressed, // Make it required
@@ -53,7 +55,7 @@ class AccountCard extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       // Format the balance as currency, e.g., using 'intl' package
-                      'Balance: later', // Using account.balance
+                      'Balance: ${balance.toStringAsFixed(2)}', // Using account.balance
                       style: TextStyle(
                         fontSize: 14,
                         color: Colors.grey[700],

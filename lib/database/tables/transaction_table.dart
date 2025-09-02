@@ -26,6 +26,12 @@ class TransactionTable {
     return result.map((row) => TransactionModel.fromMap(row)).toList();
   }
 
+  static Future<int> getTransactionsCountForAccount(int? accountId) async {
+    final db = await DatabaseHelper.instance.database;
+    final result = await db.query(table, where: 'accountId = ?', whereArgs: [accountId]);
+    return result.length;
+  }
+
   /// Get single transaction by id
   static Future<TransactionModel?> getTransactionById(int id) async {
     final db = await DatabaseHelper.instance.database;
@@ -52,7 +58,8 @@ class TransactionTable {
   }
 
   /// Get today's balance
-  static Future<double> getTodayBalance() async {
+  static Future<double> getTodayBalanceForAccount(int? accountId) async {
+
     final db = await DatabaseHelper.instance.database;
     final now = DateTime.now();
     final today = DateFormat('yyyy-MM-dd').format(now);
@@ -60,8 +67,8 @@ class TransactionTable {
     final result = await db.rawQuery('''
       SELECT SUM(amount) as balance
       FROM $table
-      WHERE DATE(createdAt) = ?
-    ''', [today]);
+      WHERE accountId = ? AND DATE(createdAt) = ?
+    ''', [accountId, today]);
 
     if (result.isNotEmpty && result.first['balance'] != null) {
       return result.first['balance'] as double;

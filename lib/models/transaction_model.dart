@@ -2,6 +2,7 @@ class TransactionModel {
   final int? id;
   final double amount;
   final String? note;
+  final int? accountId;
   final DateTime createdAt;
 
   TransactionModel({
@@ -9,6 +10,7 @@ class TransactionModel {
     required this.amount,
     this.note,
     required this.createdAt,
+    required this.accountId,
   });
 
   Map<String, dynamic> toMap() {
@@ -17,6 +19,7 @@ class TransactionModel {
       'amount': amount,
       'note': note,
       'createdAt': createdAt.toIso8601String(),
+      'accountId': accountId,
     };
   }
 
@@ -26,6 +29,7 @@ class TransactionModel {
       amount: map['amount'],
       note: map['note'] ?? '',
       createdAt: DateTime.parse(map['createdAt']),
+      accountId: map['accountId'],
     );
   }
 }

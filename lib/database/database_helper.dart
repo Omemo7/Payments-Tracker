@@ -2,6 +2,8 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'package:intl/intl.dart'; // Added for DateFormat, though not strictly necessary for query construction if using ISO strings
 import '../models/transaction_model.dart';
+import '../models/account_model.dart'; // Added for AccountModel
+import './tables/account_table.dart'; // Added for AccountTable
 
 class DatabaseHelper {
   // Singleton instance
@@ -48,9 +50,12 @@ class DatabaseHelper {
         print('DatabaseHelper: onUpgrade called. Old Version: $oldVersion, New Version: $newVersion. Upgrading schema...');
         await _onUpgrade(db, oldVersion, newVersion);
       },
-      onOpen: (Database db) {
+      onOpen: (Database db) async { // <-- Made onOpen async
         // --- Added Logging ---
         print('DatabaseHelper: onOpen called. Database is open.');
+        // Enable foreign key constraints
+        await db.execute('PRAGMA foreign_keys = ON;');
+        print('DatabaseHelper: Foreign key constraints ENABLED.');
       },
     );
 
@@ -139,6 +144,7 @@ class DatabaseHelper {
 
     await db.insert(tableAccounts, {'name': 'Default Account'});
   }
+
 
 
 

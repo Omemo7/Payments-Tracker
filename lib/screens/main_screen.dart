@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:payments_tracker_flutter/database/database_helper.dart';
+import 'package:payments_tracker_flutter/global_variables/chosen_account.dart';
 import 'add_edit_transaction_screen.dart';
 import 'transactions_log_screen.dart';
 import 'monthly_summary_screen.dart';
@@ -37,9 +38,11 @@ class MainScreen extends StatefulWidget {
   @override
   State<MainScreen> createState() => _MainScreenState();
 }
-
+Future<double> getTodayBalanceForChosenAccount(){
+  return TransactionTable.getTodayBalanceForAccount(ChosenAccount().account?.id);
+}
 class _MainScreenState extends State<MainScreen> {
-  Future<double> _currentBalanceFuture = TransactionTable.getTodayBalance();
+  Future<double> _currentBalanceFuture = getTodayBalanceForChosenAccount();
   final TextEditingController _resetConfirmController = TextEditingController();
 
   @override
@@ -50,7 +53,7 @@ class _MainScreenState extends State<MainScreen> {
 
   Future<void> _loadBalance() async {
     setState(() {
-      _currentBalanceFuture = TransactionTable.getTodayBalance();
+      _currentBalanceFuture = getTodayBalanceForChosenAccount();
     });
   }
 
@@ -136,7 +139,13 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Payments Tracker'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            Navigator.of(context).pop();
+          },
+        ),
+        title: Text('${ChosenAccount().account?.name}'),
         centerTitle: true,
         actions: <Widget>[
           PopupMenuButton<String>(

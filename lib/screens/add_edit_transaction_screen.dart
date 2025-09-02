@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // Added for input formatters
 import 'package:intl/intl.dart'; // For date formatting
+import 'package:payments_tracker_flutter/global_variables/chosen_account.dart';
 import 'package:payments_tracker_flutter/models/transaction_model.dart';
 
 import '../database/tables/transaction_table.dart';
@@ -57,7 +58,8 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
     TransactionModel txn = TransactionModel(
       amount: widget.transactionType == TransactionType.income ? unsignedAmount : -1 * unsignedAmount,
       note: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
-      createdAt: _currentDateTime, // This is DateTime.now() for add mode
+      createdAt: _currentDateTime,
+      accountId: ChosenAccount().account?.id,
     );
 
     final int addedTransactionId = await TransactionTable.insertTransaction(txn);
@@ -83,7 +85,8 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
       id: widget.transactionToEdit!.id,
       amount: widget.transactionType == TransactionType.income ? unsignedAmount : -1 * unsignedAmount,
       note: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
-      createdAt: _currentDateTime, // This is the original createdAt for edit mode
+      createdAt: _currentDateTime,
+      accountId: ChosenAccount().account?.id,
     );
 
     final int rowsAffected = await TransactionTable.updateTransaction(updatedTxn);
