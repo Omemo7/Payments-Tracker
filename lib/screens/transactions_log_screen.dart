@@ -204,7 +204,7 @@ class _TransactionsLogScreenState extends State<TransactionsLogScreen> {
                       final transaction = transactionsForDisplayedDate[index];
 
                       return FutureBuilder<double>(
-                        future: TransactionTable.getBalanceUntilTransactionByTransactionId(transaction.id!),
+                        future: TransactionTable.getBalanceUntilTransactionByTransactionIdForAccount(transaction.id!,ChosenAccount().account!.id),
                         builder: (context, balanceSnapshot) {
 
                           return TransactionInfoCard(

@@ -43,13 +43,13 @@ class TransactionTable {
   }
 
   /// Get balance until a specific transaction
-  static Future<double> getBalanceUntilTransactionByTransactionId(int id) async {
+  static Future<double> getBalanceUntilTransactionByTransactionIdForAccount(int transactionId,int? accountId) async {
     final db = await DatabaseHelper.instance.database;
     final result = await db.rawQuery('''
       SELECT SUM(amount) as balance
       FROM $table
-      WHERE id <= ?
-    ''', [id]);
+      WHERE accountId = ? AND id <= ?
+    ''', [accountId,transactionId,accountId]);
 
     if (result.isNotEmpty && result.first['balance'] != null) {
       return result.first['balance'] as double;
