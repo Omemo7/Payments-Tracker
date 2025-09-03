@@ -1,17 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:payments_tracker_flutter/global_variables/chosen_account.dart';
 
 import 'package:payments_tracker_flutter/widgets/transaction_info_card.dart';
 import 'package:payments_tracker_flutter/screens/add_edit_transaction_screen.dart'; // For TransactionType
 import 'package:payments_tracker_flutter/models/transaction_model.dart';
 import 'package:payments_tracker_flutter/database/tables/transaction_table.dart';
+import 'package:payments_tracker_flutter/models/account_model.dart'; // Import AccountModel
+import 'package:payments_tracker_flutter/database/tables/account_table.dart'; // Import AccountTable
 class TransactionsLogScreen extends StatefulWidget {
   const TransactionsLogScreen({super.key});
 
   @override
   State<TransactionsLogScreen> createState() => _TransactionsLogScreenState();
 }
-
 class _TransactionsLogScreenState extends State<TransactionsLogScreen> {
   DateTime _currentDisplayedDate = DateTime.now();
   List<DateTime> _sortedDaysWithTransactions = [];
@@ -23,34 +25,50 @@ class _TransactionsLogScreenState extends State<TransactionsLogScreen> {
     super.initState();
     _today = _normalizeDate(DateTime.now());
     _currentDisplayedDate = _today; // Initialize currentDisplayedDate
-    _dataLoadingFuture = _loadDataForDate(_currentDisplayedDate, isInitialLoad: true);
+    // Placeholder: You'll need to decide how to select the initial account.
+    // For now, let's assume you have a way to get the first account or a default one.
+    // This part will need adjustment based on your account selection logic.
+    _loadInitialData();
+  }
+
+  Future<void> _loadInitialData() async {
+    // The `!` (bang operator) here is a null assertion operator.
+    // It tells the Dart compiler that you are certain that `ChosenAccount().account`
+    // will not be null at this point, and therefore it's safe to access its `id` property.
+    // If `ChosenAccount().account` were null, this would throw a runtime error.
+    // This is often used when you have external guarantees or checks that ensure
+    // the value won't be null, but the compiler can't infer it.
+
+    _dataLoadingFuture = _loadDataForDateAndChosenAccount(_currentDisplayedDate, isInitialLoad: true);
+    if (mounted) {
+      setState(() {}); // Trigger a rebuild if needed, e.g., for AppBar title
+    }
   }
 
   DateTime _normalizeDate(DateTime dateTime) {
     return DateTime(dateTime.year, dateTime.month, dateTime.day);
   }
 
-  Future<List<TransactionModel>> _loadDataForDate(DateTime dateToLoad, {bool isInitialLoad = false}) async {
+  Future<List<TransactionModel>> _loadDataForDateAndChosenAccount(DateTime dateToLoad,  {bool isInitialLoad = false}) async {
     // No longer directly setting state for loading here, FutureBuilder handles it
     _currentDisplayedDate = _normalizeDate(dateToLoad);
 
     if (isInitialLoad || _sortedDaysWithTransactions.isEmpty) {
       // Refresh sorted days on initial load or if it becomes empty (e.g., after deleting all transactions for a day)
-      _sortedDaysWithTransactions = await TransactionTable.getUniqueTransactionDates();
+      _sortedDaysWithTransactions = await TransactionTable.getUniqueTransactionDatesForAccount(ChosenAccount().account?.id);
     }
-    
+
     // Update AppBar title dynamically if needed, though FutureBuilder rebuilds UI
     // If the widget is still mounted, trigger a rebuild to update AppBar title
     if (mounted) {
       setState(() {}); 
     }
-
-    return TransactionTable.getTransactionsForDate(_currentDisplayedDate);
+    return TransactionTable.getTransactionsForDateAndAccount(_currentDisplayedDate, ChosenAccount().account?.id);
   }
 
   void _triggerDataLoad(DateTime dateToLoad, {bool refreshSortedDays = false}) {
     setState(() {
-      _dataLoadingFuture = _loadDataForDate(dateToLoad, isInitialLoad: refreshSortedDays);
+      _dataLoadingFuture = _loadDataForDateAndChosenAccount(dateToLoad,  isInitialLoad: refreshSortedDays);
     });
   }
 

@@ -1,3 +1,5 @@
+import 'dart:io'; // Needed for File operations
+
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'package:intl/intl.dart'; // Added for DateFormat, though not strictly necessary for query construction if using ISO strings
@@ -18,9 +20,22 @@ class DatabaseHelper {
   DatabaseHelper._init();
 
   Future<Database> get database async {
-    if (_database != null) return _database!;
+    if (_database != null && _database!.isOpen) return _database!; // Check if open
     _database = await _initDB(_databaseName);
     return _database!;
+  }
+
+  Future<String> getDatabasePath() async {
+    final dbPath = await getDatabasesPath();
+    return join(dbPath, _databaseName);
+  }
+
+  Future<void> closeDatabase() async {
+    if (_database != null && _database!.isOpen) {
+      await _database!.close();
+      _database = null; // Set to null after closing
+      print('DatabaseHelper: Database closed.');
+    }
   }
 
   Future<Database> _initDB(String filePath) async {
@@ -149,32 +164,90 @@ class DatabaseHelper {
 
 
   Future<void> resetDatabase() async {
+    // Ensure database is open before reset
     final db = await instance.database;
+    if (!db.isOpen) {
+      print('DatabaseHelper: Database was closed. Re-opening for reset.');
+      _database = await _initDB(_databaseName); // Re-initialize if closed
+    }
 
-    // Get all table names except sqlite internal tables
-    final tables = await db.rawQuery(
-        "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';"
+
+    final tables = await _database!.rawQuery(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE 'android_metadata';" // Exclude android_metadata
     );
 
-    final batch = db.batch();
+    final batch = _database!.batch();
 
     for (var tableMap in tables) {
       final tableName = tableMap['name'] as String;
+      if (tableName == 'sqlite_sequence') continue; // sqlite_sequence is handled differently
 
-      // Skip any tables you might want to preserve (optional)
-      if (tableName == 'some_table_to_preserve') continue;
-
-      // Delete all rows
       batch.delete(tableName);
-
-      // Reset auto-increment sequence
-      batch.rawUpdate("UPDATE sqlite_sequence SET seq = 0 WHERE name = '$tableName';");
+      // For sqlite_sequence, we update the sequence for tables that were cleared
+      batch.rawUpdate("UPDATE sqlite_sequence SET seq = 0 WHERE name = ?", [tableName]);
     }
+    // Also specifically reset for tables that might not have entries but exist
+    // This part might be redundant if tables are always in sqlite_sequence after creation
+    batch.rawUpdate("DELETE FROM sqlite_sequence"); // Clear all sequence counts, they will be repopulated
 
     await batch.commit(noResult: true);
+    print('DatabaseHelper: resetDatabase EXECUTED. All user tables cleared, sequences reset.');
 
-    print('DatabaseHelper: resetDatabase EXECUTED. All tables cleared, sequences reset.');
+    // Re-create default account after reset if necessary
+    final defaultAccountCheck = await _database!.query(
+      tableAccounts,
+      where: 'name = ?',
+      whereArgs: ['Default Account'],
+    );
+    if (defaultAccountCheck.isEmpty) {
+      await _database!.insert(tableAccounts, {'name': 'Default Account'});
+      print('DatabaseHelper: Default Account re-created after reset.');
+    }
   }
 
+  // --- Backup and Restore ---
+  Future<bool> createBackup(String backupPath) async {
+    try {
+      await closeDatabase(); // Close DB before copying
+      final dbPath = await getDatabasePath();
+      final dbFile = File(dbPath);
+      if (await dbFile.exists()) {
+        await dbFile.copy(backupPath);
+        print('DatabaseHelper: Backup created successfully at $backupPath');
+        await database; // Re-open database
+        return true;
+      } else {
+        print('DatabaseHelper: Database file does not exist at $dbPath');
+        await database; // Re-open database if it was somehow not found
+        return false;
+      }
+    } catch (e) {
+      print('DatabaseHelper: Error creating backup: $e');
+      await database; // Ensure database is re-opened on error
+      return false;
+    }
+  }
 
+  Future<bool> restoreBackup(String backupPath) async {
+    try {
+      await closeDatabase(); // Close DB before restoring
+      final dbPath = await getDatabasePath();
+      final backupFile = File(backupPath);
+
+      if (await backupFile.exists()) {
+        await backupFile.copy(dbPath); // This overwrites the current DB
+        print('DatabaseHelper: Backup restored successfully from $backupPath');
+        _database = await _initDB(_databaseName); // Re-initialize and open the restored DB
+        return true;
+      } else {
+        print('DatabaseHelper: Backup file does not exist at $backupPath');
+        await database; // Re-open original database if backup not found
+        return false;
+      }
+    } catch (e) {
+      print('DatabaseHelper: Error restoring backup: $e');
+      await database; // Ensure database is re-opened on error
+      return false;
+    }
+  }
 }

@@ -109,6 +109,37 @@ class TransactionTable {
     return maps.map((row) => DateTime.parse(row['transactionDate'] as String)).toList();
   }
 
+  /// Fetches a list of unique dates that have transactions for a specific account, sorted.
+  static Future<List<DateTime>> getUniqueTransactionDatesForAccount(int? accountId, {bool descending = true}) async {
+    final db = await DatabaseHelper.instance.database;
+    final List<Map<String, dynamic>> maps = await db.rawQuery(
+        'SELECT DISTINCT DATE(createdAt) as transactionDate '
+            'FROM $table '
+            'WHERE accountId = ? '
+            'ORDER BY transactionDate ${descending ? 'DESC' : 'ASC'}',
+        [accountId]);
+
+    if (maps.isEmpty) return [];
+
+    return maps.map((row) => DateTime.parse(row['transactionDate'] as String)).toList();
+  }
+
+  /// Fetches all transactions for a specific date and account.
+  static Future<List<TransactionModel>> getTransactionsForDateAndAccount(DateTime date, int? accountId) async {
+    final db = await DatabaseHelper.instance.database;
+    final dateString = date.toIso8601String().substring(0, 10);
+
+    final List<Map<String, dynamic>> maps = await db.query(
+      table,
+      where: 'DATE(createdAt) = ? AND accountId = ?',
+      whereArgs: [dateString, accountId],
+      orderBy: 'createdAt DESC',
+    );
+
+    if (maps.isEmpty) return [];
+
+    return maps.map((row) => TransactionModel.fromMap(row)).toList();
+  }
   /// Fetches all transactions for a specific date.
   static Future<List<TransactionModel>> getTransactionsForDate(DateTime date) async {
     final db = await DatabaseHelper.instance.database;

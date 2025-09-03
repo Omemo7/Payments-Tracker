@@ -43,7 +43,6 @@ Future<double> getTodayBalanceForChosenAccount(){
 }
 class _MainScreenState extends State<MainScreen> {
   Future<double> _currentBalanceFuture = getTodayBalanceForChosenAccount();
-  final TextEditingController _resetConfirmController = TextEditingController();
 
   @override
   void initState() {
@@ -57,81 +56,11 @@ class _MainScreenState extends State<MainScreen> {
     });
   }
 
-  Future<void> _showResetConfirmationDialog() async {
-    _resetConfirmController.clear();
-    bool isButtonEnabled = false;
 
-    return showDialog<void>(
-      context: context,
-      barrierDismissible: false, 
-      builder: (BuildContext context) {
-        return StatefulBuilder( 
-          builder: (context, setStateDialog) {
-            return AlertDialog(
-              title: const Text('Confirm Reset'),
-              content: SingleChildScrollView(
-                child: ListBody(
-                  children: <Widget>[
-                    const Text('This action is irreversible and will delete all data.'),
-                    const Text('Please type "I am sure" to confirm.'),
-                    TextField(
-                      controller: _resetConfirmController,
-                      decoration: const InputDecoration(hintText: 'I am sure'),
-                      onChanged: (text) {
-                        setStateDialog(() {
-                          isButtonEnabled = text == 'I am sure';
-                        });
-                      },
-                    ),
-                  ],
-                ),
-              ),
-              actions: <Widget>[
-                TextButton(
-                  child: const Text('Cancel'),
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                ),
-                TextButton(
-                  style: TextButton.styleFrom(foregroundColor: Colors.red),
-                  onPressed: isButtonEnabled
-                      ? () {
-                          Navigator.of(context).pop(); 
-                          _performFullReset();
-                        }
-                      : null, 
-                  child: const Text('Confirm Reset'),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Future<void> _performFullReset() async {
-    try {
-      await DatabaseHelper.instance.resetDatabase();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Database has been reset successfully!')),
-        );
-        _loadBalance(); 
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error resetting database: $e')),
-        );
-      }
-    }
-  }
 
   @override
   void dispose() {
-    _resetConfirmController.dispose();
+
     super.dispose();
   }
 
@@ -147,28 +76,7 @@ class _MainScreenState extends State<MainScreen> {
         ),
         title: Text('${ChosenAccount().account?.name}'),
         centerTitle: true,
-        actions: <Widget>[
-          PopupMenuButton<String>(
-            onSelected: (value) {
-              if (value == 'reset') {
-                _showResetConfirmationDialog();
-              }
-            },
-            itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-              const PopupMenuItem<String>(
-                value: 'reset',
-                child: Row(
-                  children: [
-                    Icon(Icons.warning_amber_rounded, color: Colors.red),
-                    SizedBox(width: 8),
-                    Text('Reset All Data'),
-                  ],
-                ),
-              ),
-            ],
-            icon: const Icon(Icons.more_vert),
-          ),
-        ],
+
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
