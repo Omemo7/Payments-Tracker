@@ -80,110 +80,95 @@ class _MainScreenState extends State<MainScreen> {
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              const Text(
-                'Total Balance',
-                style: TextStyle(fontSize: 18, color: Colors.grey),
+        child: Column( // Center widget removed
+          mainAxisAlignment: MainAxisAlignment.start, // Changed to start
+          children: <Widget>[
+            SizedBox(height: MediaQuery.of(context).size.height * 0.15), // Added space at the top
+            const Text(
+              'Total Balance',
+              style: TextStyle(fontSize: 18, color: Colors.grey),
+            ),
+            FutureBuilder<double>(
+              future: _currentBalanceFuture,
+              builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const CircularProgressIndicator();
+                  } else if (snapshot.hasError) {
+                    return Text('Error: ${snapshot.error}');
+                  } else {
+                    final balance = snapshot.data ?? 0.0;
+                    final color = balance >= 0 ? Colors.green.shade700 : Colors.red.shade700;
+                    return Text(
+                      '${balance.toStringAsFixed(2)}',
+                      style: TextStyle(
+                        fontSize: 36,
+                        fontWeight: FontWeight.w600,
+                        color: color,
+                      ),
+                    );
+                  }
+              },
+            ),
+            const SizedBox(height: 30),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.list_alt_outlined),
+              label: const Text('Transactions Log'),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 15.0, horizontal: 24.0),
+                shape: const StadiumBorder(),
+                minimumSize: const Size(275, 70),
               ),
-              FutureBuilder<double>(
-                future: _currentBalanceFuture,
-                builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const CircularProgressIndicator();
-                    } else if (snapshot.hasError) {
-                      return Text('Error: ${snapshot.error}');
-                    } else {
-                      final balance = snapshot.data ?? 0.0;
-                      final color = balance >= 0 ? Colors.green.shade700 : Colors.red.shade700;
-                      return Text(
-                        '${balance.toStringAsFixed(2)}',
-                        style: TextStyle(
-                          fontSize: 36, 
-                          fontWeight: FontWeight.w600,
-                          color: color,
-                        ),
-                      );
-                    }
-                },
-              ),
-              const SizedBox(height: 40),
-              ElevatedButton.icon(
-                icon: const Icon(Icons.list_alt_outlined),
-                label: const Text('Transactions Log'),
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 15.0, horizontal: 24.0),
-                  shape: const StadiumBorder(),
-                  minimumSize: const Size(250, 50),
-                ),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const TransactionsLogScreen()),
-                  ).then((_) => _loadBalance());
-                },
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton.icon(
-                icon: const Icon(Icons.calendar_today_outlined),
-                label: const Text('Monthly Summary'),
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 15.0, horizontal: 24.0),
-                  shape: const StadiumBorder(),
-                  minimumSize: const Size(250, 50),
-                ),
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                    backgroundColor: Colors.orangeAccent,
-                    content: Text("Monthly Summary: Not implemented yet."),
-                  ));
-                },
-              ),
-              const SizedBox(height: 30),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  ElevatedButton.icon(
-                    icon: const Icon(Icons.add_circle_outline_rounded),
-                    label: const Text('Income'),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 15.0, horizontal: 24.0),
-                      shape: const StadiumBorder(),
-                      backgroundColor: Colors.green.shade600,
-                      foregroundColor: Colors.white,
-                      minimumSize: const Size(135, 50),
-                    ),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const AddEditTransactionScreen(transactionType: TransactionType.income, mode: ScreenMode.add)),
-                      ).then((_) => _loadBalance());
-                    },
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const TransactionsLogScreen()),
+                ).then((_) => _loadBalance());
+              },
+            ),
+            const SizedBox(height: 30),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ElevatedButton.icon(
+                  icon: const Icon(Icons.add_circle_outline_rounded),
+                  label: const Text('Income'),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 15.0, horizontal: 24.0),
+                    shape: const StadiumBorder(),
+                    backgroundColor: Colors.green.shade600,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(135, 50),
                   ),
-                  const SizedBox(width: 20), 
-                  ElevatedButton.icon(
-                    icon: const Icon(Icons.remove_circle_outline_rounded),
-                    label: const Text('Expense'),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 15.0, horizontal: 24.0),
-                      shape: const StadiumBorder(),
-                      backgroundColor: Colors.red.shade500,
-                      foregroundColor: Colors.white,
-                      minimumSize: const Size(135, 50),
-                    ),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const AddEditTransactionScreen(transactionType: TransactionType.expense, mode: ScreenMode.add)),
-                      ).then((_) => _loadBalance());
-                    },
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const AddEditTransactionScreen(transactionType: TransactionType.income, mode: ScreenMode.add)),
+                    ).then((_) => _loadBalance());
+                  },
+                ),
+                const SizedBox(width: 10),
+                ElevatedButton.icon(
+                  icon: const Icon(Icons.remove_circle_outline_rounded),
+                  label: const Text('Expense'),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 15.0, horizontal: 24.0),
+                    shape: const StadiumBorder(),
+                    backgroundColor: Colors.red.shade500,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(135, 50),
                   ),
-                ],
-              ),
-            ],
-          ),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const AddEditTransactionScreen(transactionType: TransactionType.expense, mode: ScreenMode.add)),
+                    ).then((_) => _loadBalance());
+                  },
+                ),
+              ],
+            ),
+
+
+          ],
         ),
       ),
     );

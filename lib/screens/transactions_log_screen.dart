@@ -153,39 +153,11 @@ class _TransactionsLogScreenState extends State<TransactionsLogScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Log: $formattedDate'),
+        title: Text(formattedDate),
         centerTitle: true,
       ),
       body: Column(
         children: [
-          FutureBuilder<List<TransactionModel>>(
-            future: _dataLoadingFuture,
-            builder: (context, snapshot) {
-              bool isLoadingSnapshot = snapshot.connectionState == ConnectionState.waiting;
-              return Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Wrap(
-                  spacing: 8.0,
-                  runSpacing: 4.0,
-                  alignment: WrapAlignment.center,
-                  children: [
-                    ElevatedButton(
-                      onPressed: isLoadingSnapshot || !_canGoToOlder(false) ? null : _goToOlderDay,
-                      child: const Text('Older Day'),
-                    ),
-                    ElevatedButton(
-                      onPressed: isLoadingSnapshot || (_normalizeDate(_currentDisplayedDate).isAtSameMomentAs(_today)) ? null : _goToToday,
-                      child: const Text('Go to Today'),
-                    ),
-                    ElevatedButton(
-                      onPressed: isLoadingSnapshot || !_canGoToNewer(false) ? null : _goToNewerDay,
-                      child: const Text('Newer Day'),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
           Expanded(
             child: FutureBuilder<List<TransactionModel>>(
               future: _dataLoadingFuture,
@@ -266,6 +238,34 @@ class _TransactionsLogScreenState extends State<TransactionsLogScreen> {
                 }
               },
             ),
+          ),
+          FutureBuilder<List<TransactionModel>>(
+            future: _dataLoadingFuture,
+            builder: (context, snapshot) {
+              bool isLoadingSnapshot = snapshot.connectionState == ConnectionState.waiting;
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(4.0, 4.0, 4.0, 40.0),
+                child: Wrap(
+                  spacing: 6.0,
+                  runSpacing: 4.0,
+                  alignment: WrapAlignment.center,
+                  children: [
+                    ElevatedButton(
+                      onPressed: isLoadingSnapshot || !_canGoToOlder(false) ? null : _goToOlderDay,
+                      child: const Text('Older Day'),
+                    ),
+                    ElevatedButton(
+                      onPressed: isLoadingSnapshot || (_normalizeDate(_currentDisplayedDate).isAtSameMomentAs(_today)) ? null : _goToToday,
+                      child: const Text('Go to Today'),
+                    ),
+                    ElevatedButton(
+                      onPressed: isLoadingSnapshot || !_canGoToNewer(false) ? null : _goToNewerDay,
+                      child: const Text('Newer Day'),
+                    ),
+                  ],
+                ),
+              );
+            },
           ),
         ],
       ),

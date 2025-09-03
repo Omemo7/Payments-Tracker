@@ -54,7 +54,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 4,
+      version: 5,
       onCreate: (Database db, int version) async {
         // --- Added Logging ---
         print('DatabaseHelper: onCreate called. Version: $version. Creating tables...');
@@ -103,7 +103,7 @@ class DatabaseHelper {
       note TEXT,
       createdAt TEXT NOT NULL,
       accountId INTEGER NOT NULL,
-      FOREIGN KEY (accountId) REFERENCES accounts(id) ON DELETE RESTRICT
+      FOREIGN KEY (accountId) REFERENCES accounts(id) ON DELETE Restrict
     )
   ''');
 
@@ -133,6 +133,30 @@ class DatabaseHelper {
 
       await db.execute('DROP TABLE ${tableTransactions}_old');
     }
+
+
+    if(oldVersion < 5){
+      await db.execute('ALTER TABLE $tableTransactions RENAME TO ${tableTransactions}_old');
+
+      await db.execute('''
+      CREATE TABLE $tableTransactions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      amount REAL NOT NULL,
+      note TEXT,
+      createdAt TEXT NOT NULL,
+      accountId INTEGER NOT NULL,
+      FOREIGN KEY (accountId) REFERENCES accounts(id) ON DELETE CASCADE
+    )
+  ''');
+
+      await db.execute('''
+    INSERT INTO $tableTransactions (id, amount, note, createdAt, accountId)
+    SELECT id, amount, note, createdAt, accountId
+    FROM ${tableTransactions}_old
+  ''');
+
+      await db.execute('DROP TABLE ${tableTransactions}_old');
+    }
   }
 
 
@@ -153,7 +177,7 @@ class DatabaseHelper {
         note TEXT,
         createdAt TEXT NOT NULL,
         accountId INTEGER NOT NULL,
-        FOREIGN KEY (accountId) REFERENCES $tableAccounts(id) ON DELETE RESTRICT
+        FOREIGN KEY (accountId) REFERENCES $tableAccounts(id) ON DELETE CASCADE
       )
     ''');
 

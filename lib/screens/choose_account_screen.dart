@@ -21,6 +21,7 @@ class _ChooseAccountScreenState extends State<ChooseAccountScreen> {
   // Store accounts with their balances
   List<Map<String, dynamic>> _accountsData = [];
   final TextEditingController _resetConfirmController = TextEditingController();
+  final TextEditingController _deleteConfirmController = TextEditingController();
 
   final TextEditingController _editAccountNameController =
       TextEditingController();
@@ -367,6 +368,7 @@ class _ChooseAccountScreenState extends State<ChooseAccountScreen> {
     _accountNameController.dispose();
     _editAccountNameController.dispose();
     _resetConfirmController.dispose(); // Dispose reset controller
+    _deleteConfirmController.dispose();
     super.dispose();
   }
 
@@ -430,24 +432,47 @@ class _ChooseAccountScreenState extends State<ChooseAccountScreen> {
                       onTap: () => _onAccountTap(account),
                       onEditPressed: () => _showEditAccountDialog(account),
                       onDeletePressed: () async {
+                        _deleteConfirmController.clear();
+                        bool isDeleteButtonEnabled = false;
+
                         final bool? confirmDelete = await showDialog<bool>(
                           context: context,
+                          barrierDismissible: false,
                           builder: (BuildContext context) {
-                            return AlertDialog(
-                              title: const Text('Confirm Delete'),
-                              content: Text(
-                                  'Are you sure you want to delete account ${account.name}?'),
-                              actions: <Widget>[
-                                TextButton(
-                                    child: const Text('Cancel'),
-                                    onPressed: () =>
-                                        Navigator.of(context).pop(false)),
-                                TextButton(
-                                    child: const Text('Delete',
-                                        style: TextStyle(color: Colors.red)),
-                                    onPressed: () =>
-                                        Navigator.of(context).pop(true)),
-                              ],
+                            return StatefulBuilder( // Use StatefulBuilder to manage button state
+                              builder: (context, setStateDialog) {
+                                return AlertDialog(
+                                  title: const Text('Confirm Delete'),
+                                  content: SingleChildScrollView(
+                                    child: ListBody(
+                                      children: <Widget>[
+                                        Text(
+                                            'Are you sure you want to delete account "${account.name}" with all its transactions? This action is irreversible.'),
+                                        const Text('Please type "I am sure" to confirm.'),
+                                        TextField(
+                                          controller: _deleteConfirmController,
+                                          decoration: const InputDecoration(hintText: 'I am sure'),
+                                          onChanged: (text) {
+                                            setStateDialog(() {
+                                              isDeleteButtonEnabled = text == 'I am sure';
+                                            });
+                                          },
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  actions: <Widget>[
+                                    TextButton(
+                                        child: const Text('Cancel'),
+                                        onPressed: () =>
+                                            Navigator.of(context).pop(false)),
+                                    TextButton(
+                                        style: TextButton.styleFrom(foregroundColor: Colors.red),
+                                        onPressed: isDeleteButtonEnabled ? () => Navigator.of(context).pop(true) : null,
+                                        child: const Text('Delete')),
+                                  ],
+                                );
+                              },
                             );
                           },
                         );
@@ -466,17 +491,7 @@ class _ChooseAccountScreenState extends State<ChooseAccountScreen> {
                           }
                           bool accountHasTransactions = await TransactionTable
                                   .getTransactionsCountForAccount(account.id!) > 0;
-                          if (accountHasTransactions) {
-                            if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                      'Account ${account.name} cannot be deleted because it has transactions. Please delete all transactions first.'),
-                                  backgroundColor: Colors.red,
-                                ),
-                              );
-                            }
-                          } else {
+
                             await AccountTable.delete(account.id!);
                             if (mounted) {
                                ScaffoldMessenger.of(context).showSnackBar(
@@ -487,7 +502,7 @@ class _ChooseAccountScreenState extends State<ChooseAccountScreen> {
                               );
                             }
                             _loadAccounts(); // Refresh list
-                          }
+
                         }
                       },
                     );
