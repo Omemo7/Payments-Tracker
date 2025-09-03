@@ -49,7 +49,7 @@ class TransactionTable {
       SELECT SUM(amount) as balance
       FROM $table
       WHERE accountId = ? AND id <= ?
-    ''', [accountId,transactionId,accountId]);
+    ''', [accountId,transactionId]);
 
     if (result.isNotEmpty && result.first['balance'] != null) {
       return result.first['balance'] as double;
