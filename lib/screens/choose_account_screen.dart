@@ -48,7 +48,7 @@ class _ChooseAccountScreenState extends State<ChooseAccountScreen> {
       double balance = 0.0; // Default balance
       if (account.id != null) {
         try {
-          balance = await TransactionTable.getTodayBalanceForAccount(account.id!);
+          balance = await TransactionTable.getTotalBalanceForAccount(account.id!);
         } catch (e) {
           print("Error fetching balance for account ${account.name} (ID: ${account.id}): $e");
           // Optionally, set a specific error state for this account's balance

@@ -57,6 +57,22 @@ class TransactionTable {
     return 0.0;
   }
 
+  /// Get total balance for a specific account
+  static Future<double> getTotalBalanceForAccount(int? accountId) async {
+    final db = await DatabaseHelper.instance.database;
+    final result = await db.rawQuery('''
+      SELECT SUM(amount) as balance
+      FROM $table
+      WHERE accountId = ?
+    ''', [accountId]);
+
+    if (result.isNotEmpty && result.first['balance'] != null) {
+      return result.first['balance'] as double;
+    }
+    return 0.0;
+  }
+
+
   /// Get today's balance
   static Future<double> getTodayBalanceForAccount(int? accountId) async {
 

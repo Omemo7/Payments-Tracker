@@ -38,11 +38,11 @@ class MainScreen extends StatefulWidget {
   @override
   State<MainScreen> createState() => _MainScreenState();
 }
-Future<double> getTodayBalanceForChosenAccount(){
-  return TransactionTable.getTodayBalanceForAccount(ChosenAccount().account?.id);
+Future<double> getTotalBalanceForChosenAccount(){
+  return TransactionTable.getTotalBalanceForAccount(ChosenAccount().account?.id);
 }
 class _MainScreenState extends State<MainScreen> {
-  Future<double> _currentBalanceFuture = getTodayBalanceForChosenAccount();
+  Future<double> _currentBalanceFuture = getTotalBalanceForChosenAccount();
 
   @override
   void initState() {
@@ -52,7 +52,7 @@ class _MainScreenState extends State<MainScreen> {
 
   Future<void> _loadBalance() async {
     setState(() {
-      _currentBalanceFuture = getTodayBalanceForChosenAccount();
+      _currentBalanceFuture = getTotalBalanceForChosenAccount();
     });
   }
 
@@ -85,7 +85,7 @@ class _MainScreenState extends State<MainScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
               const Text(
-                'Current Balance', 
+                'Total Balance',
                 style: TextStyle(fontSize: 18, color: Colors.grey),
               ),
               FutureBuilder<double>(
