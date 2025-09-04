@@ -25,23 +25,13 @@ class _TransactionsLogScreenState extends State<TransactionsLogScreen> {
     super.initState();
     _today = _normalizeDate(DateTime.now());
     _currentDisplayedDate = _today; // Initialize currentDisplayedDate
-    // Placeholder: You'll need to decide how to select the initial account.
-    // For now, let's assume you have a way to get the first account or a default one.
-    // This part will need adjustment based on your account selection logic.
     _loadInitialData();
   }
 
   Future<void> _loadInitialData() async {
-    // The `!` (bang operator) here is a null assertion operator.
-    // It tells the Dart compiler that you are certain that `ChosenAccount().account`
-    // will not be null at this point, and therefore it's safe to access its `id` property.
-    // If `ChosenAccount().account` were null, this would throw a runtime error.
-    // This is often used when you have external guarantees or checks that ensure
-    // the value won't be null, but the compiler can't infer it.
-
     _dataLoadingFuture = _loadDataForDateAndChosenAccount(_currentDisplayedDate, isInitialLoad: true);
     if (mounted) {
-      setState(() {}); // Trigger a rebuild if needed, e.g., for AppBar title
+      setState(() {}); 
     }
   }
 
@@ -50,16 +40,12 @@ class _TransactionsLogScreenState extends State<TransactionsLogScreen> {
   }
 
   Future<List<TransactionModel>> _loadDataForDateAndChosenAccount(DateTime dateToLoad,  {bool isInitialLoad = false}) async {
-    // No longer directly setting state for loading here, FutureBuilder handles it
     _currentDisplayedDate = _normalizeDate(dateToLoad);
 
     if (isInitialLoad || _sortedDaysWithTransactions.isEmpty) {
-      // Refresh sorted days on initial load or if it becomes empty (e.g., after deleting all transactions for a day)
       _sortedDaysWithTransactions = await TransactionTable.getUniqueTransactionDatesForAccount(ChosenAccount().account?.id);
     }
 
-    // Update AppBar title dynamically if needed, though FutureBuilder rebuilds UI
-    // If the widget is still mounted, trigger a rebuild to update AppBar title
     if (mounted) {
       setState(() {}); 
     }
@@ -156,122 +142,139 @@ class _TransactionsLogScreenState extends State<TransactionsLogScreen> {
         title: Text(formattedDate),
         centerTitle: true,
       ),
-      body: Column(
+      body: Stack( // Changed from Column to Stack
         children: [
-          Expanded(
-            child: FutureBuilder<List<TransactionModel>>(
-              future: _dataLoadingFuture,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                } else if (snapshot.hasError) {
-                  return Center(child: Text('Error loading transactions: ${snapshot.error}'));
-                } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return Center(child: Text('No transactions for $formattedDate.'));
-                } else {
-                  final transactionsForDisplayedDate = snapshot.data!;
-                  return ListView.builder(
-                    itemCount: transactionsForDisplayedDate.length,
-                    itemBuilder: (context, index) {
-                      final transaction = transactionsForDisplayedDate[index];
-
-                      return FutureBuilder<double>(
-                        future: TransactionTable.getBalanceUntilTransactionByTransactionIdForAccount(transaction.id!,ChosenAccount().account!.id),
-                        builder: (context, balanceSnapshot) {
-
-                          return TransactionInfoCard(
-                            transaction: transaction,
-                            balance: balanceSnapshot.data ?? 0.0,
-
-                            transactionType: transaction.amount > 0 ? TransactionType.income : TransactionType.expense,
-                            todayDate: _today,
-                            onEditPressed: () async {
-                              final result = await Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => AddEditTransactionScreen(
-                                    transactionToEdit: transaction,
-                                    transactionType: transaction.amount > 0 ? TransactionType.income : TransactionType.expense,
-                                    mode: ScreenMode.edit,
-                                  ),
-                                ),
-                              );
-                              if (result == true) {
-                                _triggerDataLoad(_currentDisplayedDate); // Refresh current day's data
-                              }
-                            },
-                            onDeletePressed: () async {
-                              final confirmDelete = await showDialog<bool>(
-                                context: context,
-                                builder: (BuildContext context) {
-                                  return AlertDialog(
-                                    title: const Text('Confirm Delete'),
-                                    content: const Text('Are you sure you want to delete this transaction?'),
-                                    actions: <Widget>[
-                                      TextButton(
-                                        child: const Text('Cancel'),
-                                        onPressed: () {
-                                          Navigator.of(context).pop(false);
-                                        },
-                                      ),
-                                      TextButton(
-                                        child: const Text('Delete'),
-                                        onPressed: () {
-                                          Navigator.of(context).pop(true);
-                                        },
-                                      ),
-                                    ],
-                                  );
-                                },
-                              );
-
-                              if (confirmDelete == true && transaction.id != null) {
-                                await TransactionTable.deleteTransaction(transaction.id!);
-
-                                _triggerDataLoad(_currentDisplayedDate, refreshSortedDays: true); 
-                              }
-                            },
-                          );
-                        });
-                    },
-                  );
-                }
-              },
-            ),
-          ),
           FutureBuilder<List<TransactionModel>>(
             future: _dataLoadingFuture,
             builder: (context, snapshot) {
-              bool isLoadingSnapshot = snapshot.connectionState == ConnectionState.waiting;
-              return Padding(
-                padding: const EdgeInsets.fromLTRB(12.0, 4.0, 12.0, 40.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: isLoadingSnapshot || !_canGoToOlder(false) ? null : _goToOlderDay,
-                        child: const Text('Older Day'),
-                      ),
-                    ),
-                    const SizedBox(width: 8), // Add spacing between buttons
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: isLoadingSnapshot || (_normalizeDate(_currentDisplayedDate).isAtSameMomentAs(_today)) ? null : _goToToday,
-                        child: const Text('Go to Today'),
-                      ),
-                    ),
-                    const SizedBox(width: 8), // Add spacing between buttons
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: isLoadingSnapshot || !_canGoToNewer(false) ? null : _goToNewerDay,
-                        child: const Text('Newer Day'),
-                      ),
-                    ),
-                  ],
-                ),
-              );
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              } else if (snapshot.hasError) {
+                return Center(child: Text('Error loading transactions: ${snapshot.error}'));
+              } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                return Center(child: Text('No transactions for $formattedDate.'));
+              } else {
+                final transactionsForDisplayedDate = snapshot.data!;
+                return ListView.builder(
+                  padding: const EdgeInsets.only(bottom: 110.0), // Added padding for floating buttons
+                  itemCount: transactionsForDisplayedDate.length,
+                  itemBuilder: (context, index) {
+                    final transaction = transactionsForDisplayedDate[index];
+
+                    return FutureBuilder<double>(
+                      future: TransactionTable.getBalanceUntilTransactionByTransactionIdForAccount(transaction.id!,ChosenAccount().account!.id),
+                      builder: (context, balanceSnapshot) {
+
+                        return TransactionInfoCard(
+                          transaction: transaction,
+                          balance: balanceSnapshot.data ?? 0.0,
+                          transactionType: transaction.amount > 0 ? TransactionType.income : TransactionType.expense,
+                          todayDate: _today,
+                          onEditPressed: () async {
+                            final result = await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => AddEditTransactionScreen(
+                                  transactionToEdit: transaction,
+                                  transactionType: transaction.amount > 0 ? TransactionType.income : TransactionType.expense,
+                                  mode: ScreenMode.edit,
+                                ),
+                              ),
+                            );
+                            if (result == true) {
+                              _triggerDataLoad(_currentDisplayedDate);
+                            }
+                          },
+                          onDeletePressed: () async {
+                            final confirmDelete = await showDialog<bool>(
+                              context: context,
+                              builder: (BuildContext context) {
+                                return AlertDialog(
+                                  title: const Text('Confirm Delete'),
+                                  content: const Text('Are you sure you want to delete this transaction?'),
+                                  actions: <Widget>[
+                                    TextButton(
+                                      child: const Text('Cancel'),
+                                      onPressed: () {
+                                        Navigator.of(context).pop(false);
+                                      },
+                                    ),
+                                    TextButton(
+                                      child: const Text('Delete'),
+                                      onPressed: () {
+                                        Navigator.of(context).pop(true);
+                                      },
+                                    ),
+                                  ],
+                                );
+                              },
+                            );
+
+                            if (confirmDelete == true && transaction.id != null) {
+                              await TransactionTable.deleteTransaction(transaction.id!);
+                              _triggerDataLoad(_currentDisplayedDate, refreshSortedDays: true); 
+                            }
+                          },
+                        );
+                      });
+                  },
+                );
+              }
             },
+          ),
+          Positioned( // Buttons are now positioned at the bottom of the Stack
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: FutureBuilder<List<TransactionModel>>(
+              future: _dataLoadingFuture, // Used to get loading state for button enable/disable
+              builder: (context, snapshot) {
+                bool isLoadingSnapshot = snapshot.connectionState == ConnectionState.waiting;
+                return Container(
+                  color: Colors.transparent, // Keeps the background transparent
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(12.0, 4.0, 12.0, 40.0), // Padding for the button row
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        Expanded(
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              disabledBackgroundColor: Colors.grey[300], // Opaque background for disabled state
+                              disabledForegroundColor: Colors.grey[700], // Text color for disabled state
+                            ),
+                            onPressed: isLoadingSnapshot || !_canGoToOlder(false) ? null : _goToOlderDay,
+                            child: const Text('Older'),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              disabledBackgroundColor: Colors.grey[300], 
+                              disabledForegroundColor: Colors.grey[700],
+                            ),
+                            onPressed: isLoadingSnapshot || (_normalizeDate(_currentDisplayedDate).isAtSameMomentAs(_today)) ? null : _goToToday,
+                            child: const Text('Today'),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              disabledBackgroundColor: Colors.grey[300],
+                              disabledForegroundColor: Colors.grey[700],
+                            ),
+                            onPressed: isLoadingSnapshot || !_canGoToNewer(false) ? null : _goToNewerDay,
+                            child: const Text('Newer'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
           ),
         ],
       ),
