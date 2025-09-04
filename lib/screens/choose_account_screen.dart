@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-// import 'package:file_picker/file_picker.dart'; // Commented out as per previous request
+import 'package:file_picker/file_picker.dart'; // Uncommented file_picker import
 import 'dart:io'; // Kept for general file operations if needed elsewhere, can be removed if not used
 
 import 'package:payments_tracker_flutter/database/tables/account_table.dart';
@@ -52,7 +52,7 @@ class _ChooseAccountScreenState extends State<ChooseAccountScreen> {
           balance = await TransactionTable.getTotalBalanceForAccount(account.id!);
         } catch (e) {
           print("Error fetching balance for account ${account.name} (ID: ${account.id}): $e");
-          // Optionally, set a specific error state for this account's balance
+
         }
       }
       newAccountsData.add({'account': account, 'balance': balance});
@@ -173,34 +173,26 @@ class _ChooseAccountScreenState extends State<ChooseAccountScreen> {
   }
 
   Future<void> _handleCreateBackup() async {
-    print('Create Backup: FilePicker functionality disabled.');
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Create Backup feature is currently disabled.')),
-      );
-    }
-    /*
-    // FilePicker logic commented out
     try {
+      // Read the DB file into bytes
+      final dbPath = await DatabaseHelper.instance.getDatabasePath();
+      final dbFile = File(dbPath);
+      final dbBytes = await dbFile.readAsBytes();
+
+      // Ask user where to save it (on Android/iOS this will just export the bytes)
       String? outputFile = await FilePicker.platform.saveFile(
         dialogTitle: 'Save Database Backup',
         fileName:
-            'payments_tracker_backup_\${DateTime.now().toIso8601String().split('.')[0].replaceAll(':', '-')}.db',
+        'payments_tracker_backup_${DateTime.now().toIso8601String().split('.')[0].replaceAll(':', '-')}.db',
         type: FileType.custom,
-        allowedExtensions: ['.db'],
+        allowedExtensions: ['db'], // no dot needed here
+        bytes: dbBytes, // 👈 REQUIRED on Android/iOS
       );
 
       if (outputFile != null) {
-        if (!outputFile.toLowerCase().endsWith('.db')) {
-          outputFile += '.db';
-        }
-        final success = await _dbHelper.createBackup(outputFile);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-                content: Text(success
-                    ? 'Backup created successfully at \\n\$outputFile'
-                    : 'Backup failed.')),
+            SnackBar(content: Text('Backup created successfully!')),
           );
         }
       } else {
@@ -213,23 +205,15 @@ class _ChooseAccountScreenState extends State<ChooseAccountScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error creating backup: \$e')),
+          SnackBar(content: Text('Error creating backup: $e')),
         );
       }
-      print('Error during backup creation: \$e');
+      print('Error during backup creation: $e');
     }
-    */
   }
 
+
   Future<void> _handleRestoreBackup() async {
-    print('Restore Backup: FilePicker functionality disabled.');
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Restore Backup feature is currently disabled.')),
-      );
-    }
-    /*
-    // FilePicker logic commented out
     final bool? confirmRestore = await showDialog<bool>(
       context: context,
       builder: (BuildContext context) {
@@ -259,7 +243,8 @@ class _ChooseAccountScreenState extends State<ChooseAccountScreen> {
 
         if (result != null && result.files.single.path != null) {
           final String backupPath = result.files.single.path!;
-          final success = await _dbHelper.restoreBackup(backupPath);
+          // Use DatabaseHelper.instance instead of _dbHelper
+          final success = await DatabaseHelper.instance.restoreBackup(backupPath);
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -282,13 +267,12 @@ class _ChooseAccountScreenState extends State<ChooseAccountScreen> {
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error restoring backup: \$e')),
+            SnackBar(content: Text('Error restoring backup: $e')),
           );
         }
-        print('Error during backup restoration: \$e');
+        print('Error during backup restoration: $e');
       }
     }
-    */
   }
 
   Future<void> _showResetConfirmationDialog() async {
@@ -508,10 +492,14 @@ class _ChooseAccountScreenState extends State<ChooseAccountScreen> {
                     );
                   },
                 ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showAddAccountDialog,
-        child: const Icon(Icons.add),
-        tooltip: 'Add New Account',
+      floatingActionButton: SizedBox(
+        width: 70.0, // Increased width
+        height: 70.0, // Increased height
+        child: FloatingActionButton(
+          onPressed: _showAddAccountDialog,
+          child: const Icon(Icons.add, size: 30.0), // Optionally increase icon size
+          tooltip: 'Add New Account',
+        ),
       ),
     );
   }

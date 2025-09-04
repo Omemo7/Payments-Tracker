@@ -116,7 +116,7 @@ class _MainScreenState extends State<MainScreen> {
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 15.0, horizontal: 24.0),
                 shape: const StadiumBorder(),
-                minimumSize: const Size(275, 70),
+                minimumSize: const Size(275, 60),
               ),
               onPressed: () {
                 Navigator.push(

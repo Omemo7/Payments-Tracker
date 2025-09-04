@@ -244,23 +244,29 @@ class _TransactionsLogScreenState extends State<TransactionsLogScreen> {
             builder: (context, snapshot) {
               bool isLoadingSnapshot = snapshot.connectionState == ConnectionState.waiting;
               return Padding(
-                padding: const EdgeInsets.fromLTRB(4.0, 4.0, 4.0, 40.0),
-                child: Wrap(
-                  spacing: 6.0,
-                  runSpacing: 4.0,
-                  alignment: WrapAlignment.center,
+                padding: const EdgeInsets.fromLTRB(12.0, 4.0, 12.0, 40.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    ElevatedButton(
-                      onPressed: isLoadingSnapshot || !_canGoToOlder(false) ? null : _goToOlderDay,
-                      child: const Text('Older Day'),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: isLoadingSnapshot || !_canGoToOlder(false) ? null : _goToOlderDay,
+                        child: const Text('Older Day'),
+                      ),
                     ),
-                    ElevatedButton(
-                      onPressed: isLoadingSnapshot || (_normalizeDate(_currentDisplayedDate).isAtSameMomentAs(_today)) ? null : _goToToday,
-                      child: const Text('Go to Today'),
+                    const SizedBox(width: 8), // Add spacing between buttons
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: isLoadingSnapshot || (_normalizeDate(_currentDisplayedDate).isAtSameMomentAs(_today)) ? null : _goToToday,
+                        child: const Text('Go to Today'),
+                      ),
                     ),
-                    ElevatedButton(
-                      onPressed: isLoadingSnapshot || !_canGoToNewer(false) ? null : _goToNewerDay,
-                      child: const Text('Newer Day'),
+                    const SizedBox(width: 8), // Add spacing between buttons
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: isLoadingSnapshot || !_canGoToNewer(false) ? null : _goToNewerDay,
+                        child: const Text('Newer Day'),
+                      ),
                     ),
                   ],
                 ),
