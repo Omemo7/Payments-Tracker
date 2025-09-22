@@ -125,6 +125,22 @@ class _MainScreenState extends State<MainScreen> {
                 ).then((_) => _loadBalance());
               },
             ),
+            const SizedBox(height: 15),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.calendar_month),
+              label: const Text('Monthly Summary'),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 15.0, horizontal: 24.0),
+                shape: const StadiumBorder(),
+                minimumSize: const Size(275, 60),
+              ),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const MonthlySummaryScreen()),
+                ).then((_) => _loadBalance());
+              },
+            ),
             const SizedBox(height: 30),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,

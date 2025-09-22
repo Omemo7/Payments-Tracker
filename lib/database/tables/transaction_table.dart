@@ -19,12 +19,110 @@ class TransactionTable {
     return await db.insert(table, txn.toMap());
   }
 
+  /// Get all unique month and year combinations that have transactions for a specific account.
+  static Future<Set<DateTime>> getUniqueTransactionMonthsForAccount(int? accountId, {bool descending = true}) async {
+    final db = await DatabaseHelper.instance.database;
+    final List<Map<String, dynamic>> maps = await db.rawQuery(
+      '''
+      SELECT DISTINCT strftime('%Y-%m-01', createdAt) as transactionMonthYear
+      FROM $table
+      WHERE accountId = ?
+      ORDER BY transactionMonthYear ${descending ? 'DESC' : 'ASC'}
+      ''',
+      [accountId],
+    );
+
+    if (maps.isEmpty) return {};
+
+    return maps.map((row) {
+      // The query returns 'YYYY-MM-01', so DateTime.parse will correctly interpret it.
+      return DateTime.parse(row['transactionMonthYear'] as String);
+    }).toSet();
+  }
+
+
   /// Get all transactions (ordered by newest first)
   static Future<List<TransactionModel>> getAllTransactions() async {
     final db = await DatabaseHelper.instance.database;
     final result = await db.query(table, orderBy: 'createdAt DESC');
     return result.map((row) => TransactionModel.fromMap(row)).toList();
   }
+
+  static Future<Map<String, double>> getMonthlySummary(int? accountId, int year, int month) async {
+    final db = await DatabaseHelper.instance.database;
+    final monthString = month.toString().padLeft(2, '0');
+    final yearString = year.toString();
+
+    final result = await db.rawQuery('''
+      SELECT 
+        SUM(CASE WHEN amount > 0 THEN amount ELSE 0 END) as totalIncome,
+        SUM(CASE WHEN amount < 0 THEN amount ELSE 0 END) as totalExpense,
+        SUM(amount) as netEffectOnBalance
+      FROM $table
+      WHERE accountId = ? AND strftime('%Y', createdAt) = ? AND strftime('%m', createdAt) = ?
+    ''', [accountId, yearString, monthString]);
+
+    if (result.isNotEmpty && result.first != null) {
+      final row = result.first;
+      return {
+        'totalIncome': (row['totalIncome'] as num?)?.toDouble() ?? 0.0,
+        'totalExpense': (row['totalExpense'] as num?)?.toDouble() ?? 0.0, // This will be negative or zero
+        'netEffectOnBalance': (row['netEffectOnBalance'] as num?)?.toDouble() ?? 0.0,
+      };
+    }
+    return {'totalIncome': 0.0, 'totalExpense': 0.0, 'netEffectOnBalance': 0.0};
+  }
+
+   static Future<List<Map<String, dynamic>>> getDailyNetWithCumulativeBalanceForMonth(int? accountId, DateTime date) async {
+    final db = await DatabaseHelper.instance.database;
+    final year = date.year;
+    final month = date.month;
+    final monthString = month.toString().padLeft(2, '0');
+    final yearString = year.toString();
+
+    double cumulativeBalance = 0.0;
+
+    // Get the balance from the beginning of time until the start of the current month
+    final firstDayOfMonth = DateTime(year, month, 1);
+    final balanceBeforeMonthResult = await db.rawQuery('''
+      SELECT SUM(amount) as balance
+      FROM $table
+      WHERE accountId = ? AND createdAt < ?
+    ''', [accountId, firstDayOfMonth.toIso8601String()]);
+
+    if (balanceBeforeMonthResult.isNotEmpty && balanceBeforeMonthResult.first['balance'] != null) {
+      cumulativeBalance = (balanceBeforeMonthResult.first['balance'] as num?)?.toDouble() ?? 0.0;
+    }
+
+    final result = await db.rawQuery('''
+      WITH DailySums AS (
+        SELECT 
+          CAST(strftime('%d', createdAt) AS INTEGER) as dayNumber,
+          SUM(amount) as dailyNet
+        FROM $table
+        WHERE accountId = ? AND strftime('%Y', createdAt) = ? AND strftime('%m', createdAt) = ?
+        GROUP BY dayNumber
+      )
+      SELECT 
+        ds.dayNumber,
+        ds.dailyNet,
+        ? + SUM(ds.dailyNet) OVER (ORDER BY ds.dayNumber ASC ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) as cumulativeBalance
+      FROM DailySums ds
+      ORDER BY ds.dayNumber ASC
+    ''', [accountId, yearString, monthString, cumulativeBalance]);
+
+    return result.map((row) {
+      return {
+        'dayNumber': row['dayNumber'] as int,
+        'dailyNet': (row['dailyNet'] as num?)?.toDouble() ?? 0.0,
+        'cumulativeBalance': (row['cumulativeBalance'] as num?)?.toDouble() ?? 0.0,
+      };
+    }).toList();
+  }
+
+
+
+
 
   static Future<int> getTransactionsCountForAccount(int? accountId) async {
     final db = await DatabaseHelper.instance.database;
@@ -156,6 +254,27 @@ class TransactionTable {
 
     return maps.map((row) => TransactionModel.fromMap(row)).toList();
   }
+
+  /// Fetches all transactions for a specific month and account.
+  static Future<List<TransactionModel>> getTransactionsForMonthAndAccount(int year, int month, int? accountId) async {
+    final db = await DatabaseHelper.instance.database;
+    // Format month to be two digits (e.g., '01' for January)
+    final monthString = month.toString().padLeft(2, '0');
+
+    final List<Map<String, dynamic>> maps = await db.query(
+      table,
+      where: "strftime('%Y-%m', createdAt) = ? AND accountId = ?",
+      whereArgs: ['${year.toString()}-$monthString', accountId],
+      orderBy: 'createdAt DESC',
+    );
+
+    if (maps.isEmpty) {
+      return [];
+    }
+
+    return maps.map((row) => TransactionModel.fromMap(row)).toList();
+  }
+
   /// Fetches all transactions for a specific date.
   static Future<List<TransactionModel>> getTransactionsForDate(DateTime date) async {
     final db = await DatabaseHelper.instance.database;

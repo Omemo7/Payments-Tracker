@@ -9,7 +9,6 @@ import 'package:payments_tracker_flutter/models/account_model.dart';
 import 'package:payments_tracker_flutter/widgets/account_card.dart';
 import 'package:payments_tracker_flutter/screens/main_screen.dart';
 import 'package:payments_tracker_flutter/database/database_helper.dart';
-
 class ChooseAccountScreen extends StatefulWidget {
   const ChooseAccountScreen({Key? key}) : super(key: key);
 
@@ -42,25 +41,12 @@ class _ChooseAccountScreenState extends State<ChooseAccountScreen> {
       });
     }
 
-    final accountsFromDb = await AccountTable.getAll();
-    List<Map<String, dynamic>> newAccountsData = [];
+    final accountsFromDb = await AccountTable.getAllAccountsWithBalances();
 
-    for (var account in accountsFromDb) {
-      double balance = 0.0; // Default balance
-      if (account.id != null) {
-        try {
-          balance = await TransactionTable.getTotalBalanceForAccount(account.id!);
-        } catch (e) {
-          print("Error fetching balance for account ${account.name} (ID: ${account.id}): $e");
-
-        }
-      }
-      newAccountsData.add({'account': account, 'balance': balance});
-    }
 
     if (mounted) {
       setState(() {
-        _accountsData = newAccountsData;
+        _accountsData = accountsFromDb;
         _isInitiallyLoading = false; // Hide main loader, data is ready
       });
     }
