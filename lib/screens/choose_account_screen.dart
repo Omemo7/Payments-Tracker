@@ -9,6 +9,7 @@ import 'package:payments_tracker_flutter/models/account_model.dart';
 import 'package:payments_tracker_flutter/widgets/account_card.dart';
 import 'package:payments_tracker_flutter/screens/main_screen.dart';
 import 'package:payments_tracker_flutter/database/database_helper.dart';
+
 class ChooseAccountScreen extends StatefulWidget {
   const ChooseAccountScreen({Key? key}) : super(key: key);
 
@@ -23,7 +24,7 @@ class _ChooseAccountScreenState extends State<ChooseAccountScreen> {
   final TextEditingController _deleteConfirmController = TextEditingController();
 
   final TextEditingController _editAccountNameController =
-      TextEditingController();
+  TextEditingController();
   final TextEditingController _accountNameController = TextEditingController();
 
   bool _isInitiallyLoading = true; // Corrected typo and ensures initial loading state
@@ -41,12 +42,25 @@ class _ChooseAccountScreenState extends State<ChooseAccountScreen> {
       });
     }
 
-    final accountsFromDb = await AccountTable.getAllAccountsWithBalances();
+    final accountsFromDb = await AccountTable.getAll();
+    List<Map<String, dynamic>> newAccountsData = [];
 
+    for (var account in accountsFromDb) {
+      double balance = 0.0; // Default balance
+      if (account.id != null) {
+        try {
+          balance = await TransactionTable.getTotalBalanceForAccount(account.id!);
+        } catch (e) {
+          print("Error fetching balance for account ${account.name} (ID: ${account.id}): $e");
+
+        }
+      }
+      newAccountsData.add({'account': account, 'balance': balance});
+    }
 
     if (mounted) {
       setState(() {
-        _accountsData = accountsFromDb;
+        _accountsData = newAccountsData;
         _isInitiallyLoading = false; // Hide main loader, data is ready
       });
     }
@@ -121,7 +135,7 @@ class _ChooseAccountScreenState extends State<ChooseAccountScreen> {
                 TextField(
                   controller: _editAccountNameController,
                   decoration:
-                      const InputDecoration(hintText: "New Account Name"),
+                  const InputDecoration(hintText: "New Account Name"),
                   autofocus: true,
                 ),
               ],
@@ -143,9 +157,9 @@ class _ChooseAccountScreenState extends State<ChooseAccountScreen> {
                   // or if it does, it's not managed here directly for editing.
                   // The balance is fetched in _loadAccounts.
                   final updatedAccount = AccountModel(
-                      id: account.id, name: newName); 
+                      id: account.id, name: newName);
                   await AccountTable.update(updatedAccount);
-                   _loadAccounts(); // Reload accounts and balances
+                  _loadAccounts(); // Reload accounts and balances
                   if (mounted) Navigator.of(context).pop();
                 } else {
                   Navigator.of(context).pop(); // Pop if no change or empty
@@ -379,105 +393,105 @@ class _ChooseAccountScreenState extends State<ChooseAccountScreen> {
       body: _isInitiallyLoading
           ? const Center(child: CircularProgressIndicator())
           : _accountsData.isEmpty
-              ? const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(16.0),
-                    child: Text(
-                      'No accounts yet.\nTap the + button to add your first one!',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 16.0),
-                    ),
-                  ),
-                )
-              : ListView.builder(
-                  itemCount: _accountsData.length,
-                  itemBuilder: (context, index) {
-                    final accountData = _accountsData[index];
-                    final AccountModel account = accountData['account'] as AccountModel;
-                    final double balance = accountData['balance'] as double;
+          ? const Center(
+        child: Padding(
+          padding: EdgeInsets.all(16.0),
+          child: Text(
+            'No accounts yet.\nTap the + button to add your first one!',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 16.0),
+          ),
+        ),
+      )
+          : ListView.builder(
+        itemCount: _accountsData.length,
+        itemBuilder: (context, index) {
+          final accountData = _accountsData[index];
+          final AccountModel account = accountData['account'] as AccountModel;
+          final double balance = accountData['balance'] as double;
 
-                    return AccountCard(
-                      account: account,
-                      balance: balance, // Use pre-fetched balance
-                      onTap: () => _onAccountTap(account),
-                      onEditPressed: () => _showEditAccountDialog(account),
-                      onDeletePressed: () async {
-                        _deleteConfirmController.clear();
-                        bool isDeleteButtonEnabled = false;
+          return AccountCard(
+            account: account,
+            balance: balance, // Use pre-fetched balance
+            onTap: () => _onAccountTap(account),
+            onEditPressed: () => _showEditAccountDialog(account),
+            onDeletePressed: () async {
+              _deleteConfirmController.clear();
+              bool isDeleteButtonEnabled = false;
 
-                        final bool? confirmDelete = await showDialog<bool>(
-                          context: context,
-                          barrierDismissible: false,
-                          builder: (BuildContext context) {
-                            return StatefulBuilder( // Use StatefulBuilder to manage button state
-                              builder: (context, setStateDialog) {
-                                return AlertDialog(
-                                  title: const Text('Confirm Delete'),
-                                  content: SingleChildScrollView(
-                                    child: ListBody(
-                                      children: <Widget>[
-                                        Text(
-                                            'Are you sure you want to delete account "${account.name}" with all its transactions? This action is irreversible.'),
-                                        const Text('Please type "I am sure" to confirm.'),
-                                        TextField(
-                                          controller: _deleteConfirmController,
-                                          decoration: const InputDecoration(hintText: 'I am sure'),
-                                          onChanged: (text) {
-                                            setStateDialog(() {
-                                              isDeleteButtonEnabled = text == 'I am sure';
-                                            });
-                                          },
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  actions: <Widget>[
-                                    TextButton(
-                                        child: const Text('Cancel'),
-                                        onPressed: () =>
-                                            Navigator.of(context).pop(false)),
-                                    TextButton(
-                                        style: TextButton.styleFrom(foregroundColor: Colors.red),
-                                        onPressed: isDeleteButtonEnabled ? () => Navigator.of(context).pop(true) : null,
-                                        child: const Text('Delete')),
-                                  ],
-                                );
-                              },
-                            );
-                          },
-                        );
+              final bool? confirmDelete = await showDialog<bool>(
+                context: context,
+                barrierDismissible: false,
+                builder: (BuildContext context) {
+                  return StatefulBuilder( // Use StatefulBuilder to manage button state
+                    builder: (context, setStateDialog) {
+                      return AlertDialog(
+                        title: const Text('Confirm Delete'),
+                        content: SingleChildScrollView(
+                          child: ListBody(
+                            children: <Widget>[
+                              Text(
+                                  'Are you sure you want to delete account "${account.name}" with all its transactions? This action is irreversible.'),
+                              const Text('Please type "I am sure" to confirm.'),
+                              TextField(
+                                controller: _deleteConfirmController,
+                                decoration: const InputDecoration(hintText: 'I am sure'),
+                                onChanged: (text) {
+                                  setStateDialog(() {
+                                    isDeleteButtonEnabled = text == 'I am sure';
+                                  });
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                        actions: <Widget>[
+                          TextButton(
+                              child: const Text('Cancel'),
+                              onPressed: () =>
+                                  Navigator.of(context).pop(false)),
+                          TextButton(
+                              style: TextButton.styleFrom(foregroundColor: Colors.red),
+                              onPressed: isDeleteButtonEnabled ? () => Navigator.of(context).pop(true) : null,
+                              child: const Text('Delete')),
+                        ],
+                      );
+                    },
+                  );
+                },
+              );
 
-                        if (confirmDelete == true) {
-                          if (account.id == null) { // Safety check
-                             if (mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Cannot delete account without an ID.'),
-                                    backgroundColor: Colors.red,
-                                  ),
-                                );
-                              }
-                            return;
-                          }
-                          bool accountHasTransactions = await TransactionTable
-                                  .getTransactionsCountForAccount(account.id!) > 0;
-
-                            await AccountTable.delete(account.id!);
-                            if (mounted) {
-                               ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('Account ${account.name} deleted successfully.'),
-                                  backgroundColor: Colors.green,
-                                ),
-                              );
-                            }
-                            _loadAccounts(); // Refresh list
-
-                        }
-                      },
+              if (confirmDelete == true) {
+                if (account.id == null) { // Safety check
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Cannot delete account without an ID.'),
+                        backgroundColor: Colors.red,
+                      ),
                     );
-                  },
-                ),
+                  }
+                  return;
+                }
+                bool accountHasTransactions = await TransactionTable
+                    .getTransactionsCountForAccount(account.id!) > 0;
+
+                await AccountTable.delete(account.id!);
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Account ${account.name} deleted successfully.'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
+                _loadAccounts(); // Refresh list
+
+              }
+            },
+          );
+        },
+      ),
       floatingActionButton: SizedBox(
         width: 70.0, // Increased width
         height: 70.0, // Increased height
