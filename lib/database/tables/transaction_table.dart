@@ -48,16 +48,16 @@ class TransactionTable {
     return result.map((row) => TransactionModel.fromMap(row)).toList();
   }
 
-  static Future<Map<String, double>> getMonthlySummary(int? accountId, int year, int month) async {
+  static Future<Map<String, double>> getMonthlySummary(int? accountId, DateTime date) async {
     final db = await DatabaseHelper.instance.database;
-    final monthString = month.toString().padLeft(2, '0');
-    final yearString = year.toString();
+    final monthString = date.month.toString().padLeft(2, '0');
+    final yearString = date.year.toString();
 
     final result = await db.rawQuery('''
       SELECT 
         SUM(CASE WHEN amount > 0 THEN amount ELSE 0 END) as totalIncome,
-        SUM(CASE WHEN amount < 0 THEN amount ELSE 0 END) as totalExpense,
-        SUM(amount) as netEffectOnBalance
+        SUM(CASE WHEN amount < 0 THEN amount ELSE 0 END) as totalExpense
+    
       FROM $table
       WHERE accountId = ? AND strftime('%Y', createdAt) = ? AND strftime('%m', createdAt) = ?
     ''', [accountId, yearString, monthString]);
@@ -65,12 +65,11 @@ class TransactionTable {
     if (result.isNotEmpty && result.first != null) {
       final row = result.first;
       return {
-        'totalIncome': (row['totalIncome'] as num?)?.toDouble() ?? 0.0,
-        'totalExpense': (row['totalExpense'] as num?)?.toDouble() ?? 0.0, // This will be negative or zero
-        'netEffectOnBalance': (row['netEffectOnBalance'] as num?)?.toDouble() ?? 0.0,
+        'income': (row['totalIncome'] as num?)?.toDouble() ?? 0.0,
+        'expense': ((row['totalExpense'] as num?)?.toDouble() ?? 0.0).abs(), // This will be negative or zero
       };
     }
-    return {'totalIncome': 0.0, 'totalExpense': 0.0, 'netEffectOnBalance': 0.0};
+    return {'income': 0.0, 'expense': 0.0};
   }
 
    static Future<List<Map<String, dynamic>>> getDailyNetWithCumulativeBalanceForMonth(int? accountId, DateTime date) async {
