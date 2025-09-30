@@ -22,8 +22,8 @@ class AccountTable {
     //get all columns from accounts table and sum of amount from transactions table for each account
     final maps = await db.rawQuery('''
       SELECT
-        $table.*,
-        COALESCE(SUM(${TransactionTable.table}.amount), 0) as balance
+        "$table".*,
+        COALESCE(SUM("${TransactionTable.table}".amount), 0.0) as balance
       FROM $table
       LEFT JOIN ${TransactionTable.table} ON $table.id = ${TransactionTable.table}.accountId
       GROUP BY $table.id

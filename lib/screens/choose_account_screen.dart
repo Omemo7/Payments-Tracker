@@ -42,25 +42,9 @@ class _ChooseAccountScreenState extends State<ChooseAccountScreen> {
       });
     }
 
-    final accountsFromDb = await AccountTable.getAll();
-    List<Map<String, dynamic>> newAccountsData = [];
-
-    for (var account in accountsFromDb) {
-      double balance = 0.0; // Default balance
-      if (account.id != null) {
-        try {
-          balance = await TransactionTable.getTotalBalanceForAccount(account.id!);
-        } catch (e) {
-          print("Error fetching balance for account ${account.name} (ID: ${account.id}): $e");
-
-        }
-      }
-      newAccountsData.add({'account': account, 'balance': balance});
-    }
-
+    _accountsData = await AccountTable.getAllAccountsWithBalances();
     if (mounted) {
       setState(() {
-        _accountsData = newAccountsData;
         _isInitiallyLoading = false; // Hide main loader, data is ready
       });
     }

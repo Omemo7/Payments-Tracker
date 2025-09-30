@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:fl_chart/fl_chart.dart'; // Added fl_chart import
+// import 'package:fl_chart/fl_chart.dart'; // Removed fl_chart import
 import 'package:payments_tracker_flutter/database/tables/transaction_table.dart';
-// Assuming TransactionType is in add_edit_transaction_screen.dart
-// If you moved it to a common file, update the import path.
 import 'package:payments_tracker_flutter/global_variables/chosen_account.dart';
-import 'add_edit_transaction_screen.dart' show TransactionType;
+// import 'add_edit_transaction_screen.dart' show TransactionType; // Assuming not needed for this change
+
+// Placeholder for the daily details screen - you'll need to create this
+// import 'package:payments_tracker_flutter/screens/daily_details_screen.dart';
 
 class MonthlySummaryScreen extends StatefulWidget {
   const MonthlySummaryScreen({super.key});
@@ -65,7 +66,6 @@ class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
 
     final Map<String, double> monthlySummary = await TransactionTable.getMonthlySummary(ChosenAccount().account?.id, selectedMonthDate);
 
-    // Get the latest cumulative balance from the chart data, which represents the balance at the end of the month
     final double overallBalanceAtEndOfMonth = chartDataForeachDayOfSelectedMonth.isNotEmpty ? chartDataForeachDayOfSelectedMonth.last['cumulativeBalance'] : 0.0;
 
     setState(() {
@@ -93,6 +93,14 @@ class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
     }
   }
 
+  Future<void> _goToCurrentMonth() async {
+    // Find the index of the current system month in _availableMonths
+    final DateTime now = DateTime.now();
+    final int currentSystemMonthIndex = _availableMonths.indexWhere((month) => month.year == now.year && month.month == now.month);
+    setState(() { _currentMonthIndex = currentSystemMonthIndex != -1 ? currentSystemMonthIndex : 0; }); // Default to most recent if current not found
+    await _loadDataForSelectedMonth();
+  }
+
   String get _formattedCurrentMonth {
     if (_currentMonthIndex < 0 || _currentMonthIndex >= _availableMonths.length) {
       return "No data";
@@ -100,19 +108,22 @@ class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
     return DateFormat.yMMMM().format(_availableMonths[_currentMonthIndex]);
   }
 
+  // _buildChart method is kept for now but not used.
+  // You can remove it later if you are sure it's no longer needed.
+  /*
   Widget _buildChart() {
     if (_selectedMonthChartData.isEmpty &&
         !(_currentMonthIndex >= 0 &&
             _currentMonthIndex < _availableMonths.length)) {
-      return Center( // Keep this centered
-        child: Column( // Added for potential icon + text
+      return Center( 
+        child: Column( 
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.bar_chart_outlined, size: 50, color: Colors.blueGrey.shade300),
             const SizedBox(height: 10),
             Text(
               'No month selected or no data available.',
-              textAlign: TextAlign.center, // Ensure text is centered if it wraps
+              textAlign: TextAlign.center, 
               style: TextStyle(color: Colors.blueGrey.shade700, fontSize: 16),
             ),
           ],
@@ -120,13 +131,11 @@ class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
       );
     }
 
-    // --- Build day → value lookup for fast access
     final Map<int, double> dailyData = {
       for (var d in _selectedMonthChartData)
         d['dayNumber'] as int: d['dailyNet'] as double
     };
 
-    // --- Build bar groups based on actual days in the month
     List<BarChartGroupData> barGroups = [];
     double minY = 0;
     double maxY = 0;
@@ -145,28 +154,26 @@ class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
           barRods: [
             BarChartRodData(
               toY: value,
-              color: value >= 0 ? Colors.green.shade400 : Colors.red.shade400, // Slightly lighter shades
+              color: value >= 0 ? Colors.green.shade400 : Colors.red.shade400,
               width: 12,
-              borderRadius: const BorderRadius.all(Radius.circular(4)), // Rounded corners
+              borderRadius: const BorderRadius.all(Radius.circular(4)),
             ),
           ],
         ),
       );
     }
 
-    // --- Adjust Y range for padding and to ensure 0 is visible
     if (minY == 0 && maxY == 0) {
-      minY = -100; // Default range if no data or all data is zero
+      minY = -100; 
       maxY = 100;
     } else {
-      double padding = (maxY - minY).abs() * 0.1; // 10% padding
-      if (padding < 10 && (maxY - minY).abs() > 0) padding = 10; // Minimum padding if range is very small but not zero
-      else if (padding == 0) padding = 10; // Minimum padding if range is zero (e.g. all values are the same)
+      double padding = (maxY - minY).abs() * 0.1; 
+      if (padding < 10 && (maxY - minY).abs() > 0) padding = 10; 
+      else if (padding == 0) padding = 10; 
 
       maxY = maxY + padding;
       minY = minY - padding;
     }
-    // Ensure 0 is visible if data is all positive or all negative by extending range to include it
     if (maxY < 0 && minY < 0) maxY = 0;
     if (minY > 0 && maxY > 0) minY = 0;
 
@@ -174,15 +181,14 @@ class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
     final axisLabelStyle = TextStyle(color: Colors.grey.shade700, fontSize: 10);
     final gridLineColor = Colors.grey.shade300;
     final double gridStrokeWidth = 0.5;
-    // Calculate a dynamic interval for Y-axis aiming for ~5-6 labels
     double yAxisInterval = ((maxY - minY) / 5).abs();
-    if (yAxisInterval < 1) yAxisInterval = 1; // Minimum interval of 1 if range is too small
-    else if (yAxisInterval > 20 && (maxY -minY) / yAxisInterval > 8) { // If interval is large, try to make it a rounder number
+    if (yAxisInterval < 1) yAxisInterval = 1; 
+    else if (yAxisInterval > 20 && (maxY -minY) / yAxisInterval > 8) { 
         yAxisInterval = (yAxisInterval / 10).ceil() * 10.0;
     } else {
         yAxisInterval = yAxisInterval.roundToDouble();
     }
-    if (yAxisInterval == 0) yAxisInterval = 20; // Default if calculation leads to 0
+    if (yAxisInterval == 0) yAxisInterval = 20;
 
 
     return BarChart(
@@ -213,10 +219,9 @@ class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
           leftTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
-              reservedSize: 45, // Increased reserved size
+              reservedSize: 45, 
               interval: yAxisInterval,
               getTitlesWidget: (value, meta) {
-                // Show 0, min, max, and interval-based ticks
                 if (value == meta.min || value == meta.max || value == 0) {
                   return SideTitleWidget(
                     axisSide: meta.axisSide,
@@ -225,7 +230,6 @@ class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
                   );
                 }
                 if (value % meta.appliedInterval == 0) {
-                     // Avoid cluttering if label is too close to min/max/0 already shown
                     bool isCloseToMin = (value - meta.min).abs() < meta.appliedInterval * 0.4;
                     bool isCloseToMax = (meta.max - value).abs() < meta.appliedInterval * 0.4;
                     bool isCloseToZero = (value - 0).abs() < meta.appliedInterval * 0.4 && (meta.min < 0 && meta.max > 0);
@@ -310,8 +314,98 @@ class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
       ),
     );
   }
+  */
 
+  Widget _dailyTransactionCard(Map<String, dynamic> data, DateTime currentMonthDateTime) {
+    final dayNumber = data['dayNumber'] as int;
+    final dailyNet = data['dailyNet'] as double;
+    final cumulativeBalance = data['cumulativeBalance'] as double;
 
+    final DateTime specificDate = DateTime(currentMonthDateTime.year, currentMonthDateTime.month, dayNumber);
+
+    return Card(
+      elevation: 2.0,
+      margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+        title: Text(
+          'Day $dayNumber - ${DateFormat.EEEE().format(specificDate)}', // e.g., Day 15 - Monday
+          style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).primaryColorDark),
+        ),
+        // subtitle: Text(
+        //   'Net: ${dailyNet.toStringAsFixed(2)}, Cumulative Balance: ${cumulativeBalance.toStringAsFixed(2)}',
+        //   style: TextStyle(
+        //     color: dailyNet >= 0 ? Colors.green.shade700 : Colors.red.shade700,
+        //     fontWeight: FontWeight.w500,
+        //   ),
+        // ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 4.0), // Added spacing
+            Text('Net: ${dailyNet.toStringAsFixed(2)}', style: TextStyle(color: dailyNet >= 0 ? Colors.green.shade700 : Colors.red.shade700, fontWeight: FontWeight.w500)),
+            const SizedBox(height: 2.0), // Added spacing
+            Text('Balance: ${cumulativeBalance.toStringAsFixed(2)}', style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+            const SizedBox(height: 4.0), // Added spacing at the end if needed for overall padding
+          ],
+        ),
+
+        trailing: Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey.shade600),
+        onTap: () {
+          // TODO: Navigate to DailyDetailsScreen
+          // Navigator.push(
+          //   context,
+          //   MaterialPageRoute(
+          //     builder: (context) => DailyDetailsScreen(selectedDate: specificDate, accountId: ChosenAccount().account?.id),
+          //   ),
+          // );
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Not implemented, Navigate to details for Day $dayNumber (${DateFormat.yMd().format(specificDate)})')),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildDailyTransactionCards() {
+    if (_currentMonthIndex < 0 || _currentMonthIndex >= _availableMonths.length) {
+      return const Center(child: Text("Select a month to see daily transactions."));
+    }
+
+    final List<Map<String, dynamic>> daysWithTransactions = _selectedMonthChartData
+        .where((data) => data['dailyNet'] != null && data['dailyNet'] != 0.0)
+        .toList();
+
+    if (daysWithTransactions.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.calendar_today_outlined, size: 50, color: Colors.blueGrey.shade300),
+              const SizedBox(height: 10),
+              Text(
+                'No transactions recorded for this month.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.blueGrey.shade700, fontSize: 16),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final DateTime currentMonthDateTime = _availableMonths[_currentMonthIndex];
+
+    return ListView.builder(
+      itemCount: daysWithTransactions.length,
+      itemBuilder: (context, index) {
+        final data = daysWithTransactions[index];
+        return _dailyTransactionCard(data, currentMonthDateTime);
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -324,45 +418,51 @@ class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8.0),
+              child: Text(
+                _currentMonthIndex >= 0 && _currentMonthIndex < _availableMonths.length
+                    ? DateFormat.yMMMM().format(_availableMonths[_currentMonthIndex])
+                    : "No Data",
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: _currentMonthIndex >= 0 && _currentMonthIndex < _availableMonths.length
+                      ? Theme.of(context).textTheme.titleLarge?.color
+                      : Colors.grey.shade600,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            // Navigation buttons
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 ElevatedButton(
                   onPressed: _currentMonthIndex < _availableMonths.length - 1 ? () async => await _goToPreviousMonth() : null,
                   child: const Text('Older'),
                 ),
-                Text(
-                  _formattedCurrentMonth,
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                Builder( // Use Builder to get the correct context for checking the current month
+                  builder: (context) {
+                    final DateTime now = DateTime.now();
+                    bool isCurrentMonthDisplayed = false;
+                    if (_currentMonthIndex >= 0 && _currentMonthIndex < _availableMonths.length) {
+                      final DateTime displayedMonth = _availableMonths[_currentMonthIndex];
+                      isCurrentMonthDisplayed = displayedMonth.year == now.year && displayedMonth.month == now.month;
+                    }
+                    return ElevatedButton(
+                      onPressed: isCurrentMonthDisplayed ? null : () async => await _goToCurrentMonth(),
+                      child: const Text('Current'),
+                    );
+                  }
                 ),
-                ElevatedButton(
+                ElevatedButton( // Newer button
                   onPressed: _currentMonthIndex > 0 ? () async => await _goToNextMonth() : null,
                   child: const Text('Newer'),
                 ),
               ],
             ),
             const SizedBox(height: 20),
-            Container(
-              height: 300,
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 16.0),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-                // Optional: Add a subtle border or background to the chart container itself
-                // border: Border.all(color: Colors.grey.shade300),
-                // color: Colors.white,
-                 boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withOpacity(0.1),
-                    spreadRadius: 1,
-                    blurRadius: 3,
-                    offset: Offset(0, 1), // changes position of shadow
-                  ),
-                ],
-              ),
-              child: _buildChart(),
-            ),
-            const SizedBox(height: 20), 
             Material( 
               elevation: 6.0,
               shadowColor: Colors.blueGrey.withOpacity(0.5),
@@ -430,7 +530,7 @@ class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(
-                              'Overall Balance (End of Month):', // Clarified label
+                              'Overall Balance (End of Month):',
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
@@ -460,23 +560,12 @@ class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 10),
-            // The following ListView is for debugging/verification, consider removing or styling it for production
-            // const Text('Processed Chart Data (for verification):', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            // Expanded(
-            //   child: _selectedMonthChartData.isEmpty && !(_currentMonthIndex >= 0 && _currentMonthIndex < _availableMonths.length)
-            //       ? const Center(child: Text('No transactions for this month.'))
-            //       : ListView.builder(
-            //           itemCount: _selectedMonthChartData.length,
-            //           itemBuilder: (context, index) {
-            //             final data = _selectedMonthChartData[index];
-            //             return ListTile(
-            //               title: Text('Day ${data['dayNumber']}'),
-            //               subtitle: Text('Net: ${data['dailyNet'].toStringAsFixed(2)}, Cumul (Month): ${data['cumulativeBalance'].toStringAsFixed(2)}'),
-            //             );
-            //           },
-            //         ),
-            // ),
+            const SizedBox(height: 20),
+            Expanded( // Make the list scrollable and take available space
+              child: Container(
+                child: _buildDailyTransactionCards(), // Replaced chart with cards
+              ),
+            ),
           ],
         ),
       ),
