@@ -24,6 +24,20 @@ class DailyDetailsScreen extends StatefulWidget {
 class _DailyDetailsScreenState extends State<DailyDetailsScreen> {
   late Future<List<TransactionModel>> _transactionsFuture;
 
+  final Color _pageBackgroundColor = Colors.white;
+  final Color _primaryTextColor = Colors.deepPurple.shade700;
+  final Color _secondaryTextColor = Colors.deepPurple.shade300;
+  final Color _chipBackgroundColor = Colors.deepPurple.shade50;
+  final Color _chipTextColor = Colors.deepPurple.shade600;
+  final LinearGradient _summaryGradient = LinearGradient(
+    colors: [
+      Colors.deepPurple.shade50,
+      Colors.white,
+    ],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
   @override
   void initState() {
     super.initState();
@@ -51,31 +65,38 @@ class _DailyDetailsScreenState extends State<DailyDetailsScreen> {
     } else if (net < 0) {
       netColor = Colors.red.shade700;
     } else {
-      netColor = Theme.of(context).textTheme.bodyLarge?.color ?? Colors.blueGrey.shade700;
+      netColor = _primaryTextColor;
     }
 
     return Card(
-      elevation: 4, // Increased elevation
-      margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0), // Adjusted margin
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), // Rounded corners
-      child: Padding(
-        padding: const EdgeInsets.all(20.0), // Increased padding
+      elevation: 6,
+      margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      clipBehavior: Clip.antiAlias,
+      child: Container(
+        decoration: BoxDecoration(gradient: _summaryGradient),
+        padding: const EdgeInsets.all(22.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Summary for ${DateFormat('MMMM d').format(widget.selectedDate)}', // More descriptive title
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+              'Summary for ${DateFormat('MMMM d').format(widget.selectedDate)}',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: _primaryTextColor,
+                  ),
             ),
             const SizedBox(height: 18),
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround, // Distribute space
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 _buildStatChip('Income', incomeTotal.toStringAsFixed(2), Colors.green.shade100, Colors.green.shade800),
                 _buildStatChip('Expense', expenseTotal.abs().toStringAsFixed(2), Colors.red.shade100, Colors.red.shade800),
               ],
             ),
-            const Divider(height: 30, thickness: 0.5), // Adjusted divider
+            const SizedBox(height: 18),
+            const Divider(height: 1, thickness: 0.4),
+            const SizedBox(height: 18),
             _buildBalanceRow(
               label: 'Net Daily Flow',
               amount: net.toStringAsFixed(2),
@@ -83,13 +104,11 @@ class _DailyDetailsScreenState extends State<DailyDetailsScreen> {
               isBold: true,
               fontSize: 16,
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
             _buildBalanceRow(
               label: 'End of Day Balance',
               amount: cumulativeBalance != null ? cumulativeBalance.toStringAsFixed(2) : 'N/A',
-              color: cumulativeBalance != null
-                  ? (Theme.of(context).textTheme.bodyLarge?.color ?? Colors.blueGrey.shade700)
-                  : Colors.blueGrey.shade400,
+              color: cumulativeBalance != null ? _primaryTextColor : _secondaryTextColor,
               isBold: true,
               fontSize: 16,
             ),
@@ -103,14 +122,24 @@ class _DailyDetailsScreenState extends State<DailyDetailsScreen> {
   Widget _buildStatChip(String label, String value, Color backgroundColor, Color textColor) {
     return Column(
       children: [
-        Text(label, style: Theme.of(context).textTheme.labelLarge?.copyWith(color: Colors.blueGrey.shade600)),
+        Text(
+          label,
+          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                color: _primaryTextColor.withOpacity(0.75),
+                fontWeight: FontWeight.w600,
+              ),
+        ),
         const SizedBox(height: 4),
         Chip(
-          backgroundColor: backgroundColor,
+          backgroundColor: label == 'Income' || label == 'Expense' ? backgroundColor : _chipBackgroundColor,
           padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
           label: Text(
             value,
-            style: TextStyle(fontWeight: FontWeight.bold, color: textColor, fontSize: 16),
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: label == 'Income' || label == 'Expense' ? textColor : _chipTextColor,
+              fontSize: 16,
+            ),
           ),
         ),
       ],
@@ -127,7 +156,7 @@ class _DailyDetailsScreenState extends State<DailyDetailsScreen> {
           style: TextStyle(
             fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
             fontSize: fontSize ?? Theme.of(context).textTheme.bodyMedium?.fontSize,
-            color: Theme.of(context).textTheme.bodyLarge?.color?.withOpacity(0.8)
+            color: _primaryTextColor.withOpacity(isBold ? 0.95 : 0.8),
           ),
         ),
         Text(
@@ -150,12 +179,12 @@ class _DailyDetailsScreenState extends State<DailyDetailsScreen> {
           child: Column( // Added Column for icon and text
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.receipt_long_outlined, size: 60, color: Colors.blueGrey.shade300),
+              Icon(Icons.receipt_long_outlined, size: 60, color: _secondaryTextColor),
               const SizedBox(height: 16),
               Text(
                 'No transactions recorded for this day.',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 16, color: Colors.blueGrey.shade600),
+                style: TextStyle(fontSize: 16, color: _primaryTextColor.withOpacity(0.7)),
               ),
             ],
           ),
@@ -166,18 +195,25 @@ class _DailyDetailsScreenState extends State<DailyDetailsScreen> {
     return ListView.separated(
       padding: const EdgeInsets.symmetric(vertical: 8.0), // Add padding to the list
       itemCount: transactions.length,
-      separatorBuilder: (_, __) => const Divider(height: 1, indent: 16, endIndent: 16), // Subtle separator
+      separatorBuilder: (_, __) => Divider(
+        height: 1,
+        indent: 16,
+        endIndent: 16,
+        color: _secondaryTextColor.withOpacity(0.2),
+      ), // Subtle separator
       itemBuilder: (context, index) {
         final transaction = transactions[index];
         final bool isIncome = transaction.amount >= 0;
         final Color baseColor = isIncome ? Colors.green.shade700 : Colors.red.shade700;
-        final Color lightBackgroundColor = isIncome ? Colors.green.shade50 : Colors.red.shade50;
+        final Color lightBackgroundColor = isIncome
+            ? Colors.green.shade50.withOpacity(0.6)
+            : Colors.red.shade50.withOpacity(0.6);
         final String amountPrefix = isIncome ? '+' : '';
 
         return Card( // Wrap ListTile in a Card for better definition
           margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 6.0),
-          elevation: 1,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          elevation: 2,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           child: ListTile(
             leading: CircleAvatar(
               backgroundColor: lightBackgroundColor,
@@ -191,11 +227,15 @@ class _DailyDetailsScreenState extends State<DailyDetailsScreen> {
               transaction.note != null && transaction.note!.isNotEmpty
                   ? transaction.note!
                   : 'No description',
-              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 15,
+                color: _primaryTextColor,
+              ),
             ),
             subtitle: Text(
               DateFormat.jm().format(transaction.createdAt),
-              style: TextStyle(color: Colors.blueGrey.shade500, fontSize: 13),
+              style: TextStyle(color: _primaryTextColor.withOpacity(0.6), fontSize: 13),
             ),
             trailing: Text(
               '$amountPrefix${transaction.amount.toStringAsFixed(2)}',
@@ -216,13 +256,19 @@ class _DailyDetailsScreenState extends State<DailyDetailsScreen> {
     final String formattedDate = DateFormat('EEEE, MMMM d, yyyy').format(widget.selectedDate);
 
     return Scaffold(
-      backgroundColor: Colors.blueGrey.shade50, // Added a subtle background color
+      backgroundColor: _pageBackgroundColor,
       appBar: AppBar(
-        title: Text(formattedDate),
+        title: Text(
+          formattedDate,
+          style: TextStyle(
+            color: _primaryTextColor,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         centerTitle: true,
         elevation: 1, // Subtle elevation for AppBar
         backgroundColor: Colors.white, // AppBar background
-        foregroundColor: Colors.blueGrey.shade800, // AppBar text/icon color
+        foregroundColor: _primaryTextColor, // AppBar text/icon color
       ),
       body: FutureBuilder<List<TransactionModel>>(
         future: _transactionsFuture,
@@ -236,7 +282,7 @@ class _DailyDetailsScreenState extends State<DailyDetailsScreen> {
                 child: Text(
                   'Error loading transactions: ${snapshot.error}',
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.red.shade700, fontSize: 16),
+                  style: TextStyle(color: Colors.red.shade700, fontSize: 16, fontWeight: FontWeight.w600),
                 ),
               ),
             );
@@ -251,13 +297,13 @@ class _DailyDetailsScreenState extends State<DailyDetailsScreen> {
                 padding: const EdgeInsets.only(left: 20.0, right: 20.0, top: 16.0, bottom: 8.0),
                 child: Row(
                   children: [
-                    Icon(Icons.list_alt_rounded, color: Colors.blueGrey.shade700),
+                    Icon(Icons.list_alt_rounded, color: _primaryTextColor),
                     const SizedBox(width: 8),
                     Text(
                       'Transactions',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: Colors.blueGrey.shade700
+                        color: _primaryTextColor,
                       ),
                     ),
                   ],
