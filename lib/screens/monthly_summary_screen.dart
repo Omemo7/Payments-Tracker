@@ -102,6 +102,70 @@ class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
     await _loadDataForSelectedMonth();
   }
 
+  Future<void> _openMonthPicker() async {
+    if (_availableMonths.isEmpty) {
+      return;
+    }
+
+    final DateTime mostRecentMonth = _availableMonths.first;
+    final DateTime oldestMonth = _availableMonths.last;
+
+    DateTime initialDate;
+    if (_currentMonthIndex >= 0 && _currentMonthIndex < _availableMonths.length) {
+      initialDate = _availableMonths[_currentMonthIndex];
+    } else {
+      initialDate = mostRecentMonth;
+    }
+
+    final DateTime now = DateTime.now();
+    final DateTime normalizedInitialDate = DateTime(initialDate.year, initialDate.month, 1);
+    final DateTime normalizedNow = DateTime(now.year, now.month, now.day);
+    final DateTime firstAllowedDate = DateTime(oldestMonth.year, oldestMonth.month, 1);
+
+    DateTime mostRecentMonthLastDay = DateTime(
+      mostRecentMonth.year,
+      mostRecentMonth.month,
+      DateUtils.getDaysInMonth(mostRecentMonth.year, mostRecentMonth.month),
+    );
+
+    if (mostRecentMonthLastDay.isAfter(normalizedNow)) {
+      mostRecentMonthLastDay = normalizedNow;
+    }
+
+    DateTime adjustedInitialDate = normalizedInitialDate;
+    if (adjustedInitialDate.isBefore(firstAllowedDate)) {
+      adjustedInitialDate = firstAllowedDate;
+    } else if (adjustedInitialDate.isAfter(mostRecentMonthLastDay)) {
+      adjustedInitialDate = mostRecentMonthLastDay;
+    }
+
+    final DateTime? selectedDate = await showDatePicker(
+      context: context,
+      initialDate: adjustedInitialDate,
+      firstDate: firstAllowedDate,
+      lastDate: mostRecentMonthLastDay,
+      selectableDayPredicate: (date) {
+        return _availableMonths.any(
+          (availableMonth) =>
+              availableMonth.year == date.year && availableMonth.month == date.month,
+        );
+      },
+    );
+
+    if (selectedDate != null) {
+      final int newMonthIndex = _availableMonths.indexWhere(
+        (month) => month.year == selectedDate.year && month.month == selectedDate.month,
+      );
+
+      if (newMonthIndex != -1) {
+        setState(() {
+          _currentMonthIndex = newMonthIndex;
+        });
+        await _loadDataForSelectedMonth();
+      }
+    }
+  }
+
   String get _formattedCurrentMonth {
     if (_currentMonthIndex < 0 || _currentMonthIndex >= _availableMonths.length) {
       return "No data";
@@ -415,6 +479,12 @@ class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
       appBar: AppBar(
         title: const Text('Monthly Summary'),
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.calendar_today),
+            onPressed: _availableMonths.isEmpty ? null : () async => await _openMonthPicker(),
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
