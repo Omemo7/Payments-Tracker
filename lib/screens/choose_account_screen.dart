@@ -9,6 +9,7 @@ import 'package:payments_tracker_flutter/models/account_model.dart';
 import 'package:payments_tracker_flutter/widgets/account_card.dart';
 import 'package:payments_tracker_flutter/screens/main_screen.dart';
 import 'package:payments_tracker_flutter/database/database_helper.dart';
+import 'package:payments_tracker_flutter/global_variables/app_colors.dart';
 
 class ChooseAccountScreen extends StatefulWidget {
   const ChooseAccountScreen({Key? key}) : super(key: key);
@@ -211,7 +212,7 @@ class _ChooseAccountScreenState extends State<ChooseAccountScreen> {
                 onPressed: () => Navigator.of(context).pop(false)),
             TextButton(
                 child: const Text('Restore',
-                    style: TextStyle(color: Colors.red)),
+                    style: TextStyle(color: AppColors.expenseRed)),
                 onPressed: () => Navigator.of(context).pop(true)),
           ],
         );
@@ -296,7 +297,7 @@ class _ChooseAccountScreenState extends State<ChooseAccountScreen> {
                   },
                 ),
                 TextButton(
-                  style: TextButton.styleFrom(foregroundColor: Colors.red),
+                  style: TextButton.styleFrom(foregroundColor: AppColors.expenseRed),
                   onPressed: isButtonEnabled
                       ? () {
                     Navigator.of(context).pop(); // Pop confirmation dialog
@@ -435,7 +436,7 @@ class _ChooseAccountScreenState extends State<ChooseAccountScreen> {
                               onPressed: () =>
                                   Navigator.of(context).pop(false)),
                           TextButton(
-                              style: TextButton.styleFrom(foregroundColor: Colors.red),
+                              style: TextButton.styleFrom(foregroundColor: AppColors.expenseRed),
                               onPressed: isDeleteButtonEnabled ? () => Navigator.of(context).pop(true) : null,
                               child: const Text('Delete')),
                         ],
@@ -451,7 +452,7 @@ class _ChooseAccountScreenState extends State<ChooseAccountScreen> {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text('Cannot delete account without an ID.'),
-                        backgroundColor: Colors.red,
+                        backgroundColor: AppColors.expenseRed,
                       ),
                     );
                   }
@@ -465,7 +466,7 @@ class _ChooseAccountScreenState extends State<ChooseAccountScreen> {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text('Account ${account.name} deleted successfully.'),
-                      backgroundColor: Colors.green,
+                      backgroundColor: AppColors.incomeGreen,
                     ),
                   );
                 }

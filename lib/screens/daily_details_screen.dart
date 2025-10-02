@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:payments_tracker_flutter/database/tables/transaction_table.dart';
 import 'package:payments_tracker_flutter/models/transaction_model.dart';
+import 'package:payments_tracker_flutter/global_variables/app_colors.dart';
 
 class DailyDetailsScreen extends StatefulWidget {
   final DateTime selectedDate;
@@ -25,18 +26,10 @@ class _DailyDetailsScreenState extends State<DailyDetailsScreen> {
   late Future<List<TransactionModel>> _transactionsFuture;
 
   final Color _pageBackgroundColor = Colors.white;
-  final Color _primaryTextColor = Colors.blue.shade800;
-  final Color _secondaryTextColor = Colors.blueGrey.shade600;
-  final Color _chipBackgroundColor = Colors.blue.shade50;
-  final Color _chipTextColor = Colors.blue.shade700;
-  final LinearGradient _summaryGradient = LinearGradient(
-    colors: [
-      Colors.blue.shade100,
-      Colors.blue.shade50,
-    ],
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-  );
+  final Color _primaryTextColor = AppColors.deepPurple;
+  final Color _secondaryTextColor = AppColors.deepPurple.withOpacity(0.7);
+  final Color _chipBackgroundColor = AppColors.offWhite;
+  final Color _chipTextColor = AppColors.deepPurple;
 
   @override
   void initState() {
@@ -48,7 +41,8 @@ class _DailyDetailsScreenState extends State<DailyDetailsScreen> {
   }
 
   Widget _buildSummaryCard(List<TransactionModel> transactions) {
-    final double computedNet = transactions.fold(0.0, (sum, txn) => sum + txn.amount);
+    final double computedNet =
+        transactions.fold(0.0, (sum, txn) => sum + txn.amount);
     final double incomeTotal = transactions
         .where((txn) => txn.amount > 0)
         .fold(0.0, (sum, txn) => sum + txn.amount);
@@ -59,22 +53,15 @@ class _DailyDetailsScreenState extends State<DailyDetailsScreen> {
     final double net = widget.dailyNet ?? computedNet;
     final double? cumulativeBalance = widget.cumulativeBalance;
 
-    Color netColor;
-    if (net > 0) {
-      netColor = Colors.green.shade600;
-    } else if (net < 0) {
-      netColor = Colors.red.shade600;
-    } else {
-      netColor = _primaryTextColor;
-    }
+    final Color netColor = net > 0
+        ? AppColors.incomeGreen
+        : net < 0
+            ? AppColors.expenseRed
+            : AppColors.deepPurple;
 
     return Card(
-      elevation: 6,
       margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      clipBehavior: Clip.antiAlias,
-      child: Container(
-        decoration: BoxDecoration(gradient: _summaryGradient),
+      child: Padding(
         padding: const EdgeInsets.all(22.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -91,19 +78,30 @@ class _DailyDetailsScreenState extends State<DailyDetailsScreen> {
                         ),
                   ),
                 ),
-                Icon(Icons.assessment, color: Colors.blue.shade700, size: 28),
+                const Icon(Icons.assessment,
+                    color: AppColors.deepPurple, size: 28),
               ],
             ),
             const SizedBox(height: 18),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildStatChip('Income', incomeTotal.toStringAsFixed(2), Colors.green.shade100, Colors.green.shade800),
-                _buildStatChip('Expense', expenseTotal.abs().toStringAsFixed(2), Colors.red.shade100, Colors.red.shade800),
+                _buildStatChip(
+                  'Income',
+                  incomeTotal.toStringAsFixed(2),
+                  AppColors.incomeGreen.withOpacity(0.12),
+                  AppColors.incomeGreen,
+                ),
+                _buildStatChip(
+                  'Expense',
+                  expenseTotal.abs().toStringAsFixed(2),
+                  AppColors.expenseRed.withOpacity(0.12),
+                  AppColors.expenseRed,
+                ),
               ],
             ),
             const SizedBox(height: 18),
-            Divider(color: Colors.blue.shade200, thickness: 1),
+            Divider(color: AppColors.subtlePurple.withOpacity(0.2), thickness: 1),
             const SizedBox(height: 18),
             _buildBalanceRow(
               label: 'Net Daily Flow',
@@ -115,7 +113,8 @@ class _DailyDetailsScreenState extends State<DailyDetailsScreen> {
             const SizedBox(height: 12),
             Row(
               children: [
-                Icon(Icons.account_balance_wallet, color: Colors.indigo.shade600, size: 22),
+                const Icon(Icons.account_balance_wallet,
+                    color: AppColors.deepPurple, size: 22),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
@@ -123,7 +122,7 @@ class _DailyDetailsScreenState extends State<DailyDetailsScreen> {
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
-                      color: Colors.indigo.shade700,
+                      color: _primaryTextColor,
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -134,12 +133,16 @@ class _DailyDetailsScreenState extends State<DailyDetailsScreen> {
             Padding(
               padding: const EdgeInsets.only(left: 32.0),
               child: Text(
-                cumulativeBalance != null ? cumulativeBalance.toStringAsFixed(2) : 'N/A',
+                cumulativeBalance != null
+                    ? cumulativeBalance.toStringAsFixed(2)
+                    : 'N/A',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                   color: cumulativeBalance != null
-                      ? (cumulativeBalance >= 0 ? Colors.indigo.shade900 : Colors.red.shade900)
+                      ? (cumulativeBalance >= 0
+                          ? AppColors.incomeGreen
+                          : AppColors.expenseRed)
                       : _secondaryTextColor,
                 ),
               ),
@@ -163,13 +166,13 @@ class _DailyDetailsScreenState extends State<DailyDetailsScreen> {
         ),
         const SizedBox(height: 4),
         Chip(
-          backgroundColor: label == 'Income' || label == 'Expense' ? backgroundColor : _chipBackgroundColor,
+          backgroundColor: backgroundColor,
           padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
           label: Text(
             value,
             style: TextStyle(
               fontWeight: FontWeight.bold,
-              color: label == 'Income' || label == 'Expense' ? textColor : _chipTextColor,
+              color: textColor,
               fontSize: 16,
             ),
           ),
@@ -231,21 +234,19 @@ class _DailyDetailsScreenState extends State<DailyDetailsScreen> {
         height: 1,
         indent: 16,
         endIndent: 16,
-        color: _secondaryTextColor.withOpacity(0.2),
+        color: AppColors.subtlePurple.withOpacity(0.15),
       ), // Subtle separator
       itemBuilder: (context, index) {
         final transaction = transactions[index];
         final bool isIncome = transaction.amount >= 0;
-        final Color baseColor = isIncome ? Colors.green.shade600 : Colors.red.shade600;
-        final Color lightBackgroundColor = isIncome
-            ? Colors.green.shade50.withOpacity(0.6)
-            : Colors.red.shade50.withOpacity(0.6);
+        final Color baseColor =
+            isIncome ? AppColors.incomeGreen : AppColors.expenseRed;
+        final Color lightBackgroundColor = baseColor.withOpacity(0.12);
         final String amountPrefix = isIncome ? '+' : '';
 
         return Card( // Wrap ListTile in a Card for better definition
           margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 6.0),
-          elevation: 2,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           child: ListTile(
             leading: CircleAvatar(
               backgroundColor: lightBackgroundColor,
@@ -267,7 +268,8 @@ class _DailyDetailsScreenState extends State<DailyDetailsScreen> {
             ),
             subtitle: Text(
               DateFormat.jm().format(transaction.createdAt),
-              style: TextStyle(color: _primaryTextColor.withOpacity(0.6), fontSize: 13),
+              style: TextStyle(
+                  color: _primaryTextColor.withOpacity(0.6), fontSize: 13),
             ),
             trailing: Text(
               '$amountPrefix${transaction.amount.toStringAsFixed(2)}',
@@ -293,14 +295,10 @@ class _DailyDetailsScreenState extends State<DailyDetailsScreen> {
         title: Text(
           formattedDate,
           style: const TextStyle(
-            color: Colors.white,
             fontWeight: FontWeight.bold,
           ),
         ),
         centerTitle: true,
-        elevation: 1, // Subtle elevation for AppBar
-        backgroundColor: Colors.blue.shade700, // AppBar background
-        foregroundColor: Colors.white, // AppBar text/icon color
       ),
       body: FutureBuilder<List<TransactionModel>>(
         future: _transactionsFuture,
@@ -314,7 +312,11 @@ class _DailyDetailsScreenState extends State<DailyDetailsScreen> {
                 child: Text(
                   'Error loading transactions: ${snapshot.error}',
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.red.shade700, fontSize: 16, fontWeight: FontWeight.w600),
+                  style: const TextStyle(
+                    color: AppColors.expenseRed,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             );

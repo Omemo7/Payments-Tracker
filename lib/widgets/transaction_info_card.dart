@@ -4,6 +4,7 @@ import 'package:intl/intl.dart'; // For date formatting
 // If it's moved to a common file, this import will need to change.
 import '../screens/add_edit_transaction_screen.dart'; // For TransactionType
 import '../models/transaction_model.dart';
+import '../global_variables/app_colors.dart';
 
 class TransactionInfoCard extends StatelessWidget {
   final TransactionModel transaction;
@@ -32,19 +33,12 @@ class TransactionInfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color cardBackgroundColor = transactionType == TransactionType.income
-        ? Colors.green.withOpacity(0.6)
-        : Colors.red.withOpacity(0.6);
-    final String amountPrefix =
-        transactionType == TransactionType.income ? '+' : '';
-
-
+    final bool isIncome = transactionType == TransactionType.income;
+    final Color amountColor =
+        isIncome ? AppColors.incomeGreen : AppColors.expenseRed;
+    final String amountPrefix = isIncome ? '+' : '';
 
     return Card(
-      color: cardBackgroundColor,
-      elevation: 4.0,
-      margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -55,27 +49,36 @@ class TransactionInfoCard extends StatelessWidget {
               children: [
                 Text(
                   'Date: ${DateFormat.yMd().format(transaction.createdAt)}',
-                  style: const TextStyle(fontSize: 16),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    color: AppColors.deepPurple,
+                  ),
                 ),
                 Text(
                   'Time: ${DateFormat.jm().format(transaction.createdAt)}',
-                  style: const TextStyle(fontSize: 16),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    color: AppColors.deepPurple,
+                  ),
                 ),
               ],
             ),
             const SizedBox(height: 12),
             Text(
               'Amount: $amountPrefix${transaction.amount.toStringAsFixed(2)}',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 20, // Updated size
                 fontWeight: FontWeight.bold,
+                color: amountColor,
               ),
             ),
             Text(
               'Balance: ${balance.toStringAsFixed(2)}',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 20, // Updated size
                 fontWeight: FontWeight.bold,
+                color:
+                    balance >= 0 ? AppColors.incomeGreen : AppColors.expenseRed,
               ),
             ),
 
@@ -83,7 +86,10 @@ class TransactionInfoCard extends StatelessWidget {
             if (transaction.note != null && transaction.note!.isNotEmpty) ...[
               Text(
                 'Notes: ${transaction.note}',
-                style: const TextStyle(fontSize: 20), // Updated style
+                style: const TextStyle(
+                  fontSize: 20,
+                  color: AppColors.deepPurple,
+                ), // Updated style
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -97,7 +103,7 @@ class TransactionInfoCard extends StatelessWidget {
                   label: const Text('Edit'),
                   onPressed: onEditPressed,
                   style: TextButton.styleFrom(
-                    foregroundColor: Theme.of(context).colorScheme.primary,
+                    foregroundColor: AppColors.deepPurple,
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -106,7 +112,7 @@ class TransactionInfoCard extends StatelessWidget {
                   label: const Text('Delete'),
                   onPressed: onDeletePressed,
                   style: TextButton.styleFrom(
-                    foregroundColor: Theme.of(context).colorScheme.error,
+                    foregroundColor: AppColors.expenseRed,
                   ),
                 ),
               ],

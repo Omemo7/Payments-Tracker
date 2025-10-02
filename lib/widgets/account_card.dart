@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:payments_tracker_flutter/models/account_model.dart'; // Assuming AccountModel has 'name' and 'balance'
+import 'package:payments_tracker_flutter/global_variables/app_colors.dart';
 
 class AccountCard extends StatelessWidget {
   final AccountModel account;
@@ -19,23 +20,23 @@ class AccountCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isPositive = balance >= 0;
+
     return Card(
-      elevation: 4.0, // Add some shadow
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)), // Rounded corners
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12.0), // Match card's border radius
+        borderRadius: BorderRadius.circular(16.0), // Match card's border radius
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Row(
             children: [
               // Icon for the account
               CircleAvatar(
-                backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
+                radius: 24,
+                backgroundColor: AppColors.subtlePurple.withOpacity(0.12),
                 child: Icon(
                   Icons.person, // Example icon
-                  color: Theme.of(context).primaryColor,
+                  color: AppColors.deepPurple,
                 ),
               ),
               const SizedBox(width: 16),
@@ -49,6 +50,7 @@ class AccountCard extends StatelessWidget {
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
+                        color: AppColors.deepPurple,
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -58,7 +60,9 @@ class AccountCard extends StatelessWidget {
                       'Balance: ${balance.toStringAsFixed(2)}', // Using account.balance
                       style: TextStyle(
                         fontSize: 14,
-                        color: Colors.grey[700],
+                        color: isPositive
+                            ? AppColors.incomeGreen
+                            : AppColors.expenseRed,
                       ),
                     ),
                   ],
@@ -66,13 +70,13 @@ class AccountCard extends StatelessWidget {
               ),
               // Edit button
               IconButton(
-                icon: Icon(Icons.edit, color: Colors.blue[600]),
+                icon: const Icon(Icons.edit, color: AppColors.deepPurple),
                 onPressed: onEditPressed,
                 tooltip: 'Edit Account',
               ),
               // Delete button
               IconButton(
-                icon: Icon(Icons.delete, color: Colors.red[600]),
+                icon: const Icon(Icons.delete, color: AppColors.expenseRed),
                 onPressed: onDeletePressed,
                 tooltip: 'Delete Account',
               ),

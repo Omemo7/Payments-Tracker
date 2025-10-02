@@ -5,6 +5,7 @@ import 'package:payments_tracker_flutter/database/tables/transaction_table.dart'
 import 'package:payments_tracker_flutter/widgets/navigation_buttons.dart';
 import 'package:payments_tracker_flutter/global_variables/chosen_account.dart';
 import 'package:payments_tracker_flutter/screens/daily_details_screen.dart';
+import 'package:payments_tracker_flutter/global_variables/app_colors.dart';
 // import 'add_edit_transaction_screen.dart' show TransactionType; // Assuming not needed for this change
 
 // Placeholder for the daily details screen - you'll need to create this
@@ -405,13 +406,15 @@ class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
     final DateTime specificDate = DateTime(currentMonthDateTime.year, currentMonthDateTime.month, dayNumber);
 
     return Card(
-      elevation: 2.0,
       margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
         title: Text(
           'Day $dayNumber - ${DateFormat.EEEE().format(specificDate)}', // e.g., Day 15 - Monday
-          style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).primaryColorDark),
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            color: AppColors.deepPurple,
+          ),
         ),
         // subtitle: Text(
         //   'Net: ${dailyNet.toStringAsFixed(2)}, Cumulative Balance: ${cumulativeBalance.toStringAsFixed(2)}',
@@ -424,14 +427,29 @@ class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 4.0), // Added spacing
-            Text('Net: ${dailyNet.toStringAsFixed(2)}', style: TextStyle(color: dailyNet >= 0 ? Colors.green.shade700 : Colors.red.shade700, fontWeight: FontWeight.w500)),
+            Text(
+              'Net: ${dailyNet.toStringAsFixed(2)}',
+              style: TextStyle(
+                color: dailyNet >= 0
+                    ? AppColors.incomeGreen
+                    : AppColors.expenseRed,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
             const SizedBox(height: 2.0), // Added spacing
-            Text('Balance: ${cumulativeBalance.toStringAsFixed(2)}', style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+            Text(
+              'Balance: ${cumulativeBalance.toStringAsFixed(2)}',
+              style: TextStyle(
+                color: AppColors.deepPurple.withOpacity(0.7),
+                fontSize: 13,
+              ),
+            ),
             const SizedBox(height: 4.0), // Added spacing at the end if needed for overall padding
           ],
         ),
 
-        trailing: Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey.shade600),
+        trailing: Icon(Icons.arrow_forward_ios,
+            size: 16, color: AppColors.deepPurple.withOpacity(0.4)),
         onTap: () {
           Navigator.push(
             context,
@@ -465,12 +483,16 @@ class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.calendar_today_outlined, size: 50, color: Colors.blueGrey.shade300),
+              Icon(Icons.calendar_today_outlined,
+                  size: 50, color: AppColors.deepPurple.withOpacity(0.2)),
               const SizedBox(height: 10),
               Text(
                 'No transactions recorded for this month.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.blueGrey.shade700, fontSize: 16),
+                style: TextStyle(
+                  color: AppColors.deepPurple.withOpacity(0.6),
+                  fontSize: 16,
+                ),
               ),
             ],
           ),
@@ -508,20 +530,16 @@ class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
           children: [
 
             const SizedBox(height: 10),
-            Material( 
-              elevation: 6.0,
-              shadowColor: Colors.blueGrey.withOpacity(0.5),
+            Material(
+              elevation: 4.0,
+              shadowColor: AppColors.subtlePurple.withOpacity(0.15),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(15.0),
               ),
               child: Container(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(15.0),
-                  gradient: LinearGradient(
-                    colors: [Colors.blue.shade100, Colors.blue.shade50],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
+                  color: AppColors.offWhite,
                 ),
                 child: Padding(
                   padding: const EdgeInsets.all(20.0),
@@ -533,53 +551,59 @@ class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
                         children: [
                           Text(
                             'Summary: $_formattedCurrentMonth',
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
-                              color: Colors.blue.shade800,
+                              color: AppColors.deepPurple,
                             ),
                           ),
-                          Icon(Icons.assessment, color: Colors.blue.shade700, size: 28),
+                          const Icon(Icons.assessment,
+                              color: AppColors.deepPurple, size: 28),
                         ],
                       ),
                       const SizedBox(height: 16),
-                      Divider(color: Colors.blue.shade200, thickness: 1),
+                      Divider(color: AppColors.subtlePurple.withOpacity(0.2), thickness: 1),
                       const SizedBox(height: 16),
                       _buildSummaryRow(
                         label: 'Income',
                         value: _selectedMonthIncome,
                         icon: Icons.arrow_upward,
-                        color: Colors.green.shade600,
+                        color: AppColors.incomeGreen,
                       ),
                       const SizedBox(height: 10),
                       _buildSummaryRow(
                         label: 'Expense',
                         value: _selectedMonthExpense,
                         icon: Icons.arrow_downward,
-                        color: Colors.red.shade600,
+                        color: AppColors.expenseRed,
                       ),
                       const SizedBox(height: 10),
                       _buildSummaryRow(
                         label: 'Net Balance',
                         value: _selectedMonthNet,
-                        icon: _selectedMonthNet >= 0 ? Icons.trending_up : Icons.trending_down,
-                        color: _selectedMonthNet >= 0 ? Colors.teal.shade600 : Colors.orange.shade700,
+                        icon: _selectedMonthNet >= 0
+                            ? Icons.trending_up
+                            : Icons.trending_down,
+                        color: _selectedMonthNet >= 0
+                            ? AppColors.incomeGreen
+                            : AppColors.expenseRed,
                         isBold: true,
                       ),
                       const SizedBox(height: 16),
-                      Divider(color: Colors.blue.shade200, thickness: 1),
+                      Divider(color: AppColors.subtlePurple.withOpacity(0.2), thickness: 1),
                       const SizedBox(height: 16),
                       Row(
                         children: [
-                          Icon(Icons.account_balance_wallet, color: Colors.indigo.shade600, size: 22),
+                          const Icon(Icons.account_balance_wallet,
+                              color: AppColors.deepPurple, size: 22),
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(
                               'Overall Balance (End of Month):',
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
-                                color: Colors.indigo.shade700,
+                                color: AppColors.deepPurple,
                               ),
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -588,15 +612,15 @@ class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
                       ),
                       const SizedBox(height: 6),
                       Padding(
-                        padding: const EdgeInsets.only(left: 32.0), 
+                        padding: const EdgeInsets.only(left: 32.0),
                         child: Text(
                           _overallBalanceAtEndOfSelectedMonth.toStringAsFixed(2),
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                             color: _overallBalanceAtEndOfSelectedMonth >= 0
-                                ? Colors.indigo.shade900
-                                : Colors.red.shade900,
+                                ? AppColors.incomeGreen
+                                : AppColors.expenseRed,
                           ),
                         ),
                       ),
@@ -646,7 +670,7 @@ class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
             '$label:',
             style: TextStyle(
               fontSize: 16,
-              color: Colors.black87,
+              color: AppColors.deepPurple,
               fontWeight: isBold ? FontWeight.w600 : FontWeight.normal,
             ),
           ),
