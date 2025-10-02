@@ -23,30 +23,30 @@ class MyApp extends StatelessWidget {
       theme: baseTheme.copyWith(
         scaffoldBackgroundColor: Colors.white,
         colorScheme: const ColorScheme.light(
-          primary: AppColors.deepPurple,
+          primary: AppColors.purple,
           onPrimary: Colors.white,
           secondary: AppColors.subtlePurple,
           onSecondary: Colors.white,
           surface: AppColors.offWhite,
-          onSurface: AppColors.deepPurple,
+          onSurface: AppColors.purple,
           background: Colors.white,
-          onBackground: AppColors.deepPurple,
+          onBackground: AppColors.purple,
           error: AppColors.expenseRed,
           onError: Colors.white,
         ),
         textTheme: baseTheme.textTheme.apply(
-          bodyColor: AppColors.deepPurple,
-          displayColor: AppColors.deepPurple,
+          bodyColor: AppColors.purple,
+          displayColor: AppColors.purple,
         ),
         appBarTheme: const AppBarTheme(
           backgroundColor: Colors.white,
-          foregroundColor: AppColors.deepPurple,
+          foregroundColor: AppColors.purple,
           elevation: 0,
           centerTitle: true,
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.deepPurple,
+            backgroundColor: AppColors.purple,
             foregroundColor: Colors.white,
             textStyle: const TextStyle(fontWeight: FontWeight.w600),
             shape: const StadiumBorder(),
@@ -54,11 +54,11 @@ class MyApp extends StatelessWidget {
         ),
         textButtonTheme: TextButtonThemeData(
           style: TextButton.styleFrom(
-            foregroundColor: AppColors.deepPurple,
+            foregroundColor: AppColors.purple,
           ),
         ),
         snackBarTheme: const SnackBarThemeData(
-          backgroundColor: AppColors.deepPurple,
+          backgroundColor: AppColors.purple,
           contentTextStyle: TextStyle(color: Colors.white),
         ),
         cardTheme: baseTheme.cardTheme.copyWith(

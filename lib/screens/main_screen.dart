@@ -89,7 +89,7 @@ class _MainScreenState extends State<MainScreen> {
               'Total Balance',
               style: TextStyle(
                 fontSize: 18,
-                color: AppColors.deepPurple.withOpacity(0.7),
+                color: AppColors.purple.withOpacity(0.7),
               ),
             ),
             FutureBuilder<double>(

@@ -51,14 +51,14 @@ class TransactionInfoCard extends StatelessWidget {
                   'Date: ${DateFormat.yMd().format(transaction.createdAt)}',
                   style: const TextStyle(
                     fontSize: 16,
-                    color: AppColors.deepPurple,
+                    color: AppColors.purple,
                   ),
                 ),
                 Text(
                   'Time: ${DateFormat.jm().format(transaction.createdAt)}',
                   style: const TextStyle(
                     fontSize: 16,
-                    color: AppColors.deepPurple,
+                    color: AppColors.purple,
                   ),
                 ),
               ],
@@ -72,10 +72,11 @@ class TransactionInfoCard extends StatelessWidget {
                 color: amountColor,
               ),
             ),
+            const SizedBox(height: 6),
             Text(
               'Balance: ${balance.toStringAsFixed(2)}',
               style: TextStyle(
-                fontSize: 20, // Updated size
+                fontSize: 15, // Updated size
                 fontWeight: FontWeight.bold,
                 color:
                     balance >= 0 ? AppColors.incomeGreen : AppColors.expenseRed,
@@ -88,7 +89,7 @@ class TransactionInfoCard extends StatelessWidget {
                 'Notes: ${transaction.note}',
                 style: const TextStyle(
                   fontSize: 20,
-                  color: AppColors.deepPurple,
+                  color: AppColors.purple,
                 ), // Updated style
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
@@ -103,7 +104,7 @@ class TransactionInfoCard extends StatelessWidget {
                   label: const Text('Edit'),
                   onPressed: onEditPressed,
                   style: TextButton.styleFrom(
-                    foregroundColor: AppColors.deepPurple,
+                    foregroundColor: AppColors.purple,
                   ),
                 ),
                 const SizedBox(width: 8),

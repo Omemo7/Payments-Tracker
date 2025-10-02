@@ -413,7 +413,7 @@ class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
           'Day $dayNumber - ${DateFormat.EEEE().format(specificDate)}', // e.g., Day 15 - Monday
           style: const TextStyle(
             fontWeight: FontWeight.bold,
-            color: AppColors.deepPurple,
+            color: AppColors.purple,
           ),
         ),
         // subtitle: Text(
@@ -440,7 +440,7 @@ class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
             Text(
               'Balance: ${cumulativeBalance.toStringAsFixed(2)}',
               style: TextStyle(
-                color: AppColors.deepPurple.withOpacity(0.7),
+                color: AppColors.purple.withOpacity(0.7),
                 fontSize: 13,
               ),
             ),
@@ -449,7 +449,7 @@ class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
         ),
 
         trailing: Icon(Icons.arrow_forward_ios,
-            size: 16, color: AppColors.deepPurple.withOpacity(0.4)),
+            size: 16, color: AppColors.purple.withOpacity(0.4)),
         onTap: () {
           Navigator.push(
             context,
@@ -484,13 +484,13 @@ class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(Icons.calendar_today_outlined,
-                  size: 50, color: AppColors.deepPurple.withOpacity(0.2)),
+                  size: 50, color: AppColors.purple.withOpacity(0.2)),
               const SizedBox(height: 10),
               Text(
                 'No transactions recorded for this month.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: AppColors.deepPurple.withOpacity(0.6),
+                  color: AppColors.purple.withOpacity(0.6),
                   fontSize: 16,
                 ),
               ),
@@ -554,11 +554,11 @@ class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
                             style: const TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
-                              color: AppColors.deepPurple,
+                              color: AppColors.purple,
                             ),
                           ),
                           const Icon(Icons.assessment,
-                              color: AppColors.deepPurple, size: 28),
+                              color: AppColors.purple, size: 28),
                         ],
                       ),
                       const SizedBox(height: 16),
@@ -595,7 +595,7 @@ class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
                       Row(
                         children: [
                           const Icon(Icons.account_balance_wallet,
-                              color: AppColors.deepPurple, size: 22),
+                              color: AppColors.purple, size: 22),
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(
@@ -603,7 +603,7 @@ class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
                               style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
-                                color: AppColors.deepPurple,
+                                color: AppColors.purple,
                               ),
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -670,7 +670,7 @@ class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
             '$label:',
             style: TextStyle(
               fontSize: 16,
-              color: AppColors.deepPurple,
+              color: AppColors.purple,
               fontWeight: isBold ? FontWeight.w600 : FontWeight.normal,
             ),
           ),

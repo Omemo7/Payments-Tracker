@@ -26,10 +26,10 @@ class _DailyDetailsScreenState extends State<DailyDetailsScreen> {
   late Future<List<TransactionModel>> _transactionsFuture;
 
   final Color _pageBackgroundColor = Colors.white;
-  final Color _primaryTextColor = AppColors.deepPurple;
-  final Color _secondaryTextColor = AppColors.deepPurple.withOpacity(0.7);
+  final Color _primaryTextColor = AppColors.purple;
+  final Color _secondaryTextColor = AppColors.purple.withOpacity(0.7);
   final Color _chipBackgroundColor = AppColors.offWhite;
-  final Color _chipTextColor = AppColors.deepPurple;
+  final Color _chipTextColor = AppColors.purple;
 
   @override
   void initState() {
@@ -57,7 +57,7 @@ class _DailyDetailsScreenState extends State<DailyDetailsScreen> {
         ? AppColors.incomeGreen
         : net < 0
             ? AppColors.expenseRed
-            : AppColors.deepPurple;
+            : AppColors.purple;
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
@@ -79,7 +79,7 @@ class _DailyDetailsScreenState extends State<DailyDetailsScreen> {
                   ),
                 ),
                 const Icon(Icons.assessment,
-                    color: AppColors.deepPurple, size: 28),
+                    color: AppColors.purple, size: 28),
               ],
             ),
             const SizedBox(height: 18),
@@ -114,7 +114,7 @@ class _DailyDetailsScreenState extends State<DailyDetailsScreen> {
             Row(
               children: [
                 const Icon(Icons.account_balance_wallet,
-                    color: AppColors.deepPurple, size: 22),
+                    color: AppColors.purple, size: 22),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(

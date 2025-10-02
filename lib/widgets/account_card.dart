@@ -36,7 +36,7 @@ class AccountCard extends StatelessWidget {
                 backgroundColor: AppColors.subtlePurple.withOpacity(0.12),
                 child: Icon(
                   Icons.person, // Example icon
-                  color: AppColors.deepPurple,
+                  color: AppColors.purple,
                 ),
               ),
               const SizedBox(width: 16),
@@ -50,7 +50,7 @@ class AccountCard extends StatelessWidget {
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.deepPurple,
+                        color: AppColors.purple,
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -70,7 +70,7 @@ class AccountCard extends StatelessWidget {
               ),
               // Edit button
               IconButton(
-                icon: const Icon(Icons.edit, color: AppColors.deepPurple),
+                icon: const Icon(Icons.edit, color: AppColors.purple),
                 onPressed: onEditPressed,
                 tooltip: 'Edit Account',
               ),
