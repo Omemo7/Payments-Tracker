@@ -8,6 +8,13 @@ import 'package:payments_tracker_flutter/models/transaction_model.dart';
 import 'package:payments_tracker_flutter/database/tables/transaction_table.dart';
 import 'package:payments_tracker_flutter/models/account_model.dart'; // Import AccountModel
 import 'package:payments_tracker_flutter/database/tables/account_table.dart'; // Import AccountTable
+
+class _TransactionWithBalance {
+  final TransactionModel transaction;
+  final double balance;
+
+  const _TransactionWithBalance(this.transaction, this.balance);
+}
 class TransactionsLogScreen extends StatefulWidget {
   const TransactionsLogScreen({super.key});
 
@@ -18,7 +25,8 @@ class _TransactionsLogScreenState extends State<TransactionsLogScreen> {
   DateTime _currentDisplayedDate = DateTime.now();
   List<DateTime> _sortedDaysWithTransactions = [];
   late DateTime _today;
-  late Future<List<TransactionModel>> _dataLoadingFuture;
+  late Future<void> _dataLoadingFuture;
+  List<_TransactionWithBalance> _transactionsWithBalances = [];
 
   @override
   void initState() {
@@ -39,22 +47,64 @@ class _TransactionsLogScreenState extends State<TransactionsLogScreen> {
     return DateTime(dateTime.year, dateTime.month, dateTime.day);
   }
 
-  Future<List<TransactionModel>> _loadDataForDateAndChosenAccount(DateTime dateToLoad,  {bool isInitialLoad = false}) async {
+  Future<void> _loadDataForDateAndChosenAccount(DateTime dateToLoad,
+      {bool isInitialLoad = false}) async {
     _currentDisplayedDate = _normalizeDate(dateToLoad);
 
     if (isInitialLoad || _sortedDaysWithTransactions.isEmpty) {
-      _sortedDaysWithTransactions = await TransactionTable.getUniqueTransactionDatesForAccount(ChosenAccount().account?.id);
+      _sortedDaysWithTransactions = await TransactionTable
+          .getUniqueTransactionDatesForAccount(ChosenAccount().account?.id);
+    }
+
+    final accountId = ChosenAccount().account?.id;
+    List<_TransactionWithBalance> computedTransactions = [];
+
+    if (accountId != null) {
+      final transactionsForDate = await TransactionTable
+          .getTransactionsForDateAndAccount(_currentDisplayedDate, accountId);
+
+      if (transactionsForDate.isNotEmpty) {
+        final List<TransactionModel> transactionsAscending =
+            List<TransactionModel>.from(transactionsForDate.reversed);
+
+        double currentBalance = 0.0;
+        final TransactionModel oldestTransaction = transactionsAscending.first;
+        if (oldestTransaction.id != null) {
+          currentBalance = await TransactionTable
+              .getBalanceUntilTransactionByTransactionIdForAccount(
+                  oldestTransaction.id!, accountId);
+        } else {
+          currentBalance = oldestTransaction.amount;
+        }
+
+        final List<_TransactionWithBalance> ascendingWithBalances = [
+          _TransactionWithBalance(oldestTransaction, currentBalance)
+        ];
+
+        for (var i = 1; i < transactionsAscending.length; i++) {
+          final txn = transactionsAscending[i];
+          currentBalance += txn.amount;
+          ascendingWithBalances.add(_TransactionWithBalance(txn, currentBalance));
+        }
+
+        computedTransactions = ascendingWithBalances.reversed.toList();
+      }
     }
 
     if (mounted) {
-      setState(() {}); 
+      setState(() {
+        _transactionsWithBalances = computedTransactions;
+      });
+    } else {
+      _transactionsWithBalances = computedTransactions;
     }
-    return TransactionTable.getTransactionsForDateAndAccount(_currentDisplayedDate, ChosenAccount().account?.id);
   }
 
   void _triggerDataLoad(DateTime dateToLoad, {bool refreshSortedDays = false}) {
     setState(() {
-      _dataLoadingFuture = _loadDataForDateAndChosenAccount(dateToLoad,  isInitialLoad: refreshSortedDays);
+      _transactionsWithBalances = [];
+      _dataLoadingFuture = _loadDataForDateAndChosenAccount(dateToLoad,
+          isInitialLoad: refreshSortedDays);
     });
   }
 
@@ -144,79 +194,80 @@ class _TransactionsLogScreenState extends State<TransactionsLogScreen> {
       ),
       body: Stack( // Changed from Column to Stack
         children: [
-          FutureBuilder<List<TransactionModel>>(
+          FutureBuilder<void>(
             future: _dataLoadingFuture,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator());
               } else if (snapshot.hasError) {
                 return Center(child: Text('Error loading transactions: ${snapshot.error}'));
-              } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+              } else if (_transactionsWithBalances.isEmpty) {
                 return Center(child: Text('No transactions for $formattedDate.'));
               } else {
-                final transactionsForDisplayedDate = snapshot.data!;
                 return ListView.builder(
                   padding: const EdgeInsets.only(bottom: 110.0), // Added padding for floating buttons
-                  itemCount: transactionsForDisplayedDate.length,
+                  itemCount: _transactionsWithBalances.length,
                   itemBuilder: (context, index) {
-                    final transaction = transactionsForDisplayedDate[index];
+                    final transactionWithBalance =
+                        _transactionsWithBalances[index];
+                    final transaction = transactionWithBalance.transaction;
 
-                    return FutureBuilder<double>(
-                      future: TransactionTable.getBalanceUntilTransactionByTransactionIdForAccount(transaction.id!,ChosenAccount().account!.id),
-                      builder: (context, balanceSnapshot) {
-
-                        return TransactionInfoCard(
-                          transaction: transaction,
-                          balance: balanceSnapshot.data ?? 0.0,
-                          transactionType: transaction.amount > 0 ? TransactionType.income : TransactionType.expense,
-                          todayDate: _today,
-                          onEditPressed: () async {
-                            final result = await Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => AddEditTransactionScreen(
-                                  transactionToEdit: transaction,
-                                  transactionType: transaction.amount > 0 ? TransactionType.income : TransactionType.expense,
-                                  mode: ScreenMode.edit,
+                    return TransactionInfoCard(
+                      transaction: transaction,
+                      balance: transactionWithBalance.balance,
+                      transactionType: transaction.amount > 0
+                          ? TransactionType.income
+                          : TransactionType.expense,
+                      todayDate: _today,
+                      onEditPressed: () async {
+                        final result = await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => AddEditTransactionScreen(
+                              transactionToEdit: transaction,
+                              transactionType: transaction.amount > 0
+                                  ? TransactionType.income
+                                  : TransactionType.expense,
+                              mode: ScreenMode.edit,
+                            ),
+                          ),
+                        );
+                        if (result == true) {
+                          _triggerDataLoad(_currentDisplayedDate);
+                        }
+                      },
+                      onDeletePressed: () async {
+                        final confirmDelete = await showDialog<bool>(
+                          context: context,
+                          builder: (BuildContext context) {
+                            return AlertDialog(
+                              title: const Text('Confirm Delete'),
+                              content: const Text('Are you sure you want to delete this transaction?'),
+                              actions: <Widget>[
+                                TextButton(
+                                  child: const Text('Cancel'),
+                                  onPressed: () {
+                                    Navigator.of(context).pop(false);
+                                  },
                                 ),
-                              ),
+                                TextButton(
+                                  child: const Text('Delete'),
+                                  onPressed: () {
+                                    Navigator.of(context).pop(true);
+                                  },
+                                ),
+                              ],
                             );
-                            if (result == true) {
-                              _triggerDataLoad(_currentDisplayedDate);
-                            }
-                          },
-                          onDeletePressed: () async {
-                            final confirmDelete = await showDialog<bool>(
-                              context: context,
-                              builder: (BuildContext context) {
-                                return AlertDialog(
-                                  title: const Text('Confirm Delete'),
-                                  content: const Text('Are you sure you want to delete this transaction?'),
-                                  actions: <Widget>[
-                                    TextButton(
-                                      child: const Text('Cancel'),
-                                      onPressed: () {
-                                        Navigator.of(context).pop(false);
-                                      },
-                                    ),
-                                    TextButton(
-                                      child: const Text('Delete'),
-                                      onPressed: () {
-                                        Navigator.of(context).pop(true);
-                                      },
-                                    ),
-                                  ],
-                                );
-                              },
-                            );
-
-                            if (confirmDelete == true && transaction.id != null) {
-                              await TransactionTable.deleteTransaction(transaction.id!);
-                              _triggerDataLoad(_currentDisplayedDate, refreshSortedDays: true); 
-                            }
                           },
                         );
-                      });
+
+                        if (confirmDelete == true && transaction.id != null) {
+                          await TransactionTable.deleteTransaction(transaction.id!);
+                          _triggerDataLoad(_currentDisplayedDate,
+                              refreshSortedDays: true);
+                        }
+                      },
+                    );
                   },
                 );
               }
@@ -226,7 +277,7 @@ class _TransactionsLogScreenState extends State<TransactionsLogScreen> {
             left: 0,
             right: 0,
             bottom: 0,
-            child: FutureBuilder<List<TransactionModel>>(
+            child: FutureBuilder<void>(
               future: _dataLoadingFuture, // Used to get loading state for button enable/disable
               builder: (context, snapshot) {
                 bool isLoadingSnapshot = snapshot.connectionState == ConnectionState.waiting;
