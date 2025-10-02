@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 // import 'package:fl_chart/fl_chart.dart'; // Removed fl_chart import
 import 'package:payments_tracker_flutter/database/tables/transaction_table.dart';
+import 'package:payments_tracker_flutter/widgets/navigation_buttons.dart';
 import 'package:payments_tracker_flutter/global_variables/chosen_account.dart';
 import 'package:payments_tracker_flutter/screens/daily_details_screen.dart';
 // import 'add_edit_transaction_screen.dart' show TransactionType; // Assuming not needed for this change
@@ -26,11 +27,18 @@ class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
   double _selectedMonthExpense = 0.0;
   double _selectedMonthNet = 0.0;
   double _overallBalanceAtEndOfSelectedMonth = 0.0;
+  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    _initializeScreen();
+    _initializeScreenWithLoading();
+  }
+
+  Future<void> _initializeScreenWithLoading() async {
+    setState(() { _isLoading = true; });
+    await _initializeScreen();
+    setState(() { _isLoading = false; });
   }
 
   Future<void> _initializeScreen() async {
@@ -39,7 +47,7 @@ class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
       setState(() {
         _currentMonthIndex = 0; // Default to the most recent month
       });
-      await _loadDataForSelectedMonth();
+      await _loadDataForSelectedMonth(showLoading: false);
     }
   }
 
@@ -49,7 +57,9 @@ class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
     _availableMonths.sort((a, b) => b.compareTo(a));
   }
 
-  Future<void> _loadDataForSelectedMonth() async {
+  Future<void> _loadDataForSelectedMonth({bool showLoading = true}) async {
+    if (showLoading) setState(() { _isLoading = true; });
+
     if (_currentMonthIndex < 0 || _currentMonthIndex >= _availableMonths.length) {
       setState(() {
         _selectedMonthChartData = [];
@@ -57,6 +67,7 @@ class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
         _selectedMonthExpense = 0.0;
         _selectedMonthNet = 0.0;
         _overallBalanceAtEndOfSelectedMonth = 0.0;
+        if (showLoading) _isLoading = false;
       });
       return;
     }
@@ -75,27 +86,28 @@ class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
       _selectedMonthExpense = monthlySummary['expense'] ?? 0.0;
       _selectedMonthNet = _selectedMonthIncome-_selectedMonthExpense;
       _overallBalanceAtEndOfSelectedMonth = overallBalanceAtEndOfMonth;
+      if (showLoading) _isLoading = false;
     });
   }
 
   Future<void> _goToPreviousMonth() async {
     if (_currentMonthIndex < _availableMonths.length - 1) {
       setState(() {
-        _currentMonthIndex++;
+        _currentMonthIndex++; // 'Older' month means a higher index in the sorted list
       });
       await _loadDataForSelectedMonth();
     }
   }
 
   Future<void> _goToNextMonth() async {
-    if (_currentMonthIndex > 0) {
+    if (_currentMonthIndex > 0) { // 'Newer' month means a lower index
       setState(() { _currentMonthIndex--; });
       await _loadDataForSelectedMonth();
     }
   }
 
   Future<void> _goToCurrentMonth() async {
-    // Find the index of the current system month in _availableMonths
+    // Find the index of the current system month (today's month) in _availableMonths
     final DateTime now = DateTime.now();
     final int currentSystemMonthIndex = _availableMonths.indexWhere((month) => month.year == now.year && month.month == now.month);
     setState(() { _currentMonthIndex = currentSystemMonthIndex != -1 ? currentSystemMonthIndex : 0; }); // Default to most recent if current not found
@@ -141,16 +153,40 @@ class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
       setState(() {
         _currentMonthIndex = selectedIndex;
       });
-      await _loadDataForSelectedMonth();
+      await _loadDataForSelectedMonth(showLoading: true);
     }
   }
-
 
   String get _formattedCurrentMonth {
     if (_currentMonthIndex < 0 || _currentMonthIndex >= _availableMonths.length) {
       return "No data";
     }
     return DateFormat.yMMMM().format(_availableMonths[_currentMonthIndex]);
+  }
+
+  bool _isCurrentMonthDisplayed() {
+    if (_availableMonths.isEmpty || _currentMonthIndex < 0) {
+      // If there's no data or no selection, it can't be the current month.
+      // Or, if there are no transactions at all, the "Current" button might point to the non-existent current month.
+      // A check to see if any month in the list is the current month is also useful.
+      final now = DateTime.now();
+      return !_availableMonths.any((month) => month.year == now.year && month.month == now.month);
+    }
+    final DateTime now = DateTime.now();
+    final DateTime displayedMonth = _availableMonths[_currentMonthIndex];
+    return displayedMonth.year == now.year && displayedMonth.month == now.month;
+  }
+
+  bool _canGoToOlder() {
+    if (_isLoading) return false;
+    // Can go to an older month if the current index is not the last one
+    return _currentMonthIndex < _availableMonths.length - 1;
+  }
+
+  bool _canGoToNewer() {
+    if (_isLoading) return false;
+    // Can go to a newer month if the current index is greater than 0
+    return _currentMonthIndex > 0;
   }
 
   // _buildChart method is kept for now but not used.
@@ -470,51 +506,8 @@ class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8.0),
-              child: Text(
-                _currentMonthIndex >= 0 && _currentMonthIndex < _availableMonths.length
-                    ? DateFormat.yMMMM().format(_availableMonths[_currentMonthIndex])
-                    : "No Data",
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: _currentMonthIndex >= 0 && _currentMonthIndex < _availableMonths.length
-                      ? Theme.of(context).textTheme.titleLarge?.color
-                      : Colors.grey.shade600,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-            // Navigation buttons
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                ElevatedButton(
-                  onPressed: _currentMonthIndex < _availableMonths.length - 1 ? () async => await _goToPreviousMonth() : null,
-                  child: const Text('Older'),
-                ),
-                Builder( // Use Builder to get the correct context for checking the current month
-                  builder: (context) {
-                    final DateTime now = DateTime.now();
-                    bool isCurrentMonthDisplayed = false;
-                    if (_currentMonthIndex >= 0 && _currentMonthIndex < _availableMonths.length) {
-                      final DateTime displayedMonth = _availableMonths[_currentMonthIndex];
-                      isCurrentMonthDisplayed = displayedMonth.year == now.year && displayedMonth.month == now.month;
-                    }
-                    return ElevatedButton(
-                      onPressed: isCurrentMonthDisplayed ? null : () async => await _goToCurrentMonth(),
-                      child: const Text('Current'),
-                    );
-                  }
-                ),
-                ElevatedButton( // Newer button
-                  onPressed: _currentMonthIndex > 0 ? () async => await _goToNextMonth() : null,
-                  child: const Text('Newer'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
+
+            const SizedBox(height: 10),
             Material( 
               elevation: 6.0,
               shadowColor: Colors.blueGrey.withOpacity(0.5),
@@ -567,7 +560,7 @@ class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
                       ),
                       const SizedBox(height: 10),
                       _buildSummaryRow(
-                        label: 'Net Profit/Loss',
+                        label: 'Net Balance',
                         value: _selectedMonthNet,
                         icon: _selectedMonthNet >= 0 ? Icons.trending_up : Icons.trending_down,
                         color: _selectedMonthNet >= 0 ? Colors.teal.shade600 : Colors.orange.shade700,
@@ -613,10 +606,23 @@ class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
               ),
             ),
             const SizedBox(height: 20),
-            Expanded( // Make the list scrollable and take available space
-              child: Container(
-                child: _buildDailyTransactionCards(), // Replaced chart with cards
+            Expanded(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: Container(
+
+                  child: _buildDailyTransactionCards(),
+                ),
               ),
+            ),
+            NavigationButtons(
+              canGoToOlder: _canGoToOlder(),
+              canGoToNewer: _canGoToNewer(),
+              isCurrent: _isCurrentMonthDisplayed(),
+              onOlderPressed: _goToPreviousMonth,
+              onNewerPressed: _goToNextMonth,
+              onCurrentPressed: _goToCurrentMonth,
+              isLoading: _isLoading,
             ),
           ],
         ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:payments_tracker_flutter/widgets/navigation_buttons.dart';
 import 'package:payments_tracker_flutter/global_variables/chosen_account.dart';
 
 import 'package:payments_tracker_flutter/widgets/transaction_info_card.dart';
@@ -332,48 +333,14 @@ class _TransactionsLogScreenState extends State<TransactionsLogScreen> {
               future: _dataLoadingFuture, // Used to get loading state for button enable/disable
               builder: (context, snapshot) {
                 bool isLoadingSnapshot = snapshot.connectionState == ConnectionState.waiting;
-                return Container(
-                  color: Colors.transparent, // Keeps the background transparent
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(12.0, 4.0, 12.0, 40.0), // Padding for the button row
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        Expanded(
-                          child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              disabledBackgroundColor: Colors.grey[300], // Opaque background for disabled state
-                              disabledForegroundColor: Colors.grey[700], // Text color for disabled state
-                            ),
-                            onPressed: isLoadingSnapshot || !_canGoToOlder(false) ? null : _goToOlderDay,
-                            child: const Text('Older'),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              disabledBackgroundColor: Colors.grey[300], 
-                              disabledForegroundColor: Colors.grey[700],
-                            ),
-                            onPressed: isLoadingSnapshot || (_normalizeDate(_currentDisplayedDate).isAtSameMomentAs(_today)) ? null : _goToToday,
-                            child: const Text('Today'),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              disabledBackgroundColor: Colors.grey[300],
-                              disabledForegroundColor: Colors.grey[700],
-                            ),
-                            onPressed: isLoadingSnapshot || !_canGoToNewer(false) ? null : _goToNewerDay,
-                            child: const Text('Newer'),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                return NavigationButtons(
+                  canGoToOlder: _canGoToOlder(isLoadingSnapshot),
+                  canGoToNewer: _canGoToNewer(isLoadingSnapshot),
+                  isCurrent: _currentDisplayedDate.isAtSameMomentAs(_today),
+                  onOlderPressed: _goToOlderDay,
+                  onNewerPressed: _goToNewerDay,
+                  onCurrentPressed: _goToToday,
+                  isLoading: isLoadingSnapshot,
                 );
               },
             ),
