@@ -5,6 +5,7 @@ import 'add_edit_transaction_screen.dart';
 import 'transactions_log_screen.dart';
 import 'monthly_summary_screen.dart';
 import '../database/tables/transaction_table.dart';
+import '../global_variables/app_colors.dart';
 
 // Placeholder screen for Details
 class DetailsScreen extends StatelessWidget {
@@ -84,9 +85,12 @@ class _MainScreenState extends State<MainScreen> {
           mainAxisAlignment: MainAxisAlignment.start, // Changed to start
           children: <Widget>[
             SizedBox(height: MediaQuery.of(context).size.height * 0.15), // Added space at the top
-            const Text(
+            Text(
               'Total Balance',
-              style: TextStyle(fontSize: 18, color: Colors.grey),
+              style: TextStyle(
+                fontSize: 18,
+                color: AppColors.deepPurple.withOpacity(0.7),
+              ),
             ),
             FutureBuilder<double>(
               future: _currentBalanceFuture,
@@ -97,7 +101,9 @@ class _MainScreenState extends State<MainScreen> {
                     return Text('Error: ${snapshot.error}');
                   } else {
                     final balance = snapshot.data ?? 0.0;
-                    final color = balance >= 0 ? Colors.green.shade700 : Colors.red.shade700;
+                    final color = balance >= 0
+                        ? AppColors.incomeGreen
+                        : AppColors.expenseRed;
                     return Text(
                       '${balance.toStringAsFixed(2)}',
                       style: TextStyle(
@@ -149,9 +155,10 @@ class _MainScreenState extends State<MainScreen> {
                   icon: const Icon(Icons.add_circle_outline_rounded),
                   label: const Text('Income'),
                   style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 15.0, horizontal: 24.0),
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 15.0, horizontal: 24.0),
                     shape: const StadiumBorder(),
-                    backgroundColor: Colors.green.shade600,
+                    backgroundColor: AppColors.incomeGreen,
                     foregroundColor: Colors.white,
                     minimumSize: const Size(135, 50),
                   ),
@@ -167,9 +174,10 @@ class _MainScreenState extends State<MainScreen> {
                   icon: const Icon(Icons.remove_circle_outline_rounded),
                   label: const Text('Expense'),
                   style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 15.0, horizontal: 24.0),
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 15.0, horizontal: 24.0),
                     shape: const StadiumBorder(),
-                    backgroundColor: Colors.red.shade500,
+                    backgroundColor: AppColors.expenseRed,
                     foregroundColor: Colors.white,
                     minimumSize: const Size(135, 50),
                   ),
