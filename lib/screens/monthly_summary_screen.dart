@@ -102,7 +102,7 @@ class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
     await _loadDataForSelectedMonth();
   }
 
-  Future<void> _openMonthPicker() async {
+ Future<void> _openMonthPicker() async {
     if (_availableMonths.isEmpty) {
       return;
     }
@@ -144,6 +144,7 @@ class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
       await _loadDataForSelectedMonth();
     }
   }
+
 
   String get _formattedCurrentMonth {
     if (_currentMonthIndex < 0 || _currentMonthIndex >= _availableMonths.length) {
