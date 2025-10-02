@@ -24,6 +24,7 @@ class TransactionsLogScreen extends StatefulWidget {
 class _TransactionsLogScreenState extends State<TransactionsLogScreen> {
   DateTime _currentDisplayedDate = DateTime.now();
   List<DateTime> _sortedDaysWithTransactions = [];
+  Set<DateTime> _transactionDaysSet = {};
   late DateTime _today;
   late Future<void> _dataLoadingFuture;
   List<_TransactionWithBalance> _transactionsWithBalances = [];
@@ -51,10 +52,14 @@ class _TransactionsLogScreenState extends State<TransactionsLogScreen> {
       {bool isInitialLoad = false}) async {
     _currentDisplayedDate = _normalizeDate(dateToLoad);
 
+    List<DateTime> fetchedTransactionDays = _sortedDaysWithTransactions;
     if (isInitialLoad || _sortedDaysWithTransactions.isEmpty) {
-      _sortedDaysWithTransactions = await TransactionTable
+      fetchedTransactionDays = await TransactionTable
           .getUniqueTransactionDatesForAccount(ChosenAccount().account?.id);
     }
+
+    final Set<DateTime> normalizedDaysSet =
+        fetchedTransactionDays.map(_normalizeDate).toSet();
 
     final accountId = ChosenAccount().account?.id;
     List<_TransactionWithBalance> computedTransactions = [];
@@ -93,9 +98,13 @@ class _TransactionsLogScreenState extends State<TransactionsLogScreen> {
 
     if (mounted) {
       setState(() {
+        _sortedDaysWithTransactions = fetchedTransactionDays;
+        _transactionDaysSet = normalizedDaysSet;
         _transactionsWithBalances = computedTransactions;
       });
     } else {
+      _sortedDaysWithTransactions = fetchedTransactionDays;
+      _transactionDaysSet = normalizedDaysSet;
       _transactionsWithBalances = computedTransactions;
     }
   }
@@ -161,6 +170,41 @@ class _TransactionsLogScreenState extends State<TransactionsLogScreen> {
     _triggerDataLoad(_today);
   }
 
+  Future<void> _openDatePicker() async {
+    if (_sortedDaysWithTransactions.isEmpty) {
+      return;
+    }
+
+    final DateTime firstAvailableDay =
+        _sortedDaysWithTransactions.last; // Oldest date in the list
+    final DateTime latestAvailableDay = _sortedDaysWithTransactions.first;
+    final DateTime lastAllowedDay =
+        latestAvailableDay.isAfter(_today) ? _today : latestAvailableDay;
+
+    DateTime normalizedInitialDate = _normalizeDate(_currentDisplayedDate);
+    if (normalizedInitialDate.isBefore(firstAvailableDay)) {
+      normalizedInitialDate = firstAvailableDay;
+    } else if (normalizedInitialDate.isAfter(lastAllowedDay)) {
+      normalizedInitialDate = lastAllowedDay;
+    }
+
+    final DateTime? selectedDate = await showDatePicker(
+      context: context,
+      initialDate: normalizedInitialDate,
+      firstDate: firstAvailableDay,
+      lastDate: lastAllowedDay,
+      selectableDayPredicate: (date) {
+        final DateTime normalizedDate = _normalizeDate(date);
+        return _transactionDaysSet.any(
+            (availableDate) => availableDate.isAtSameMomentAs(normalizedDate));
+      },
+    );
+
+    if (selectedDate != null && mounted) {
+      _triggerDataLoad(selectedDate);
+    }
+  }
+
   bool _canGoToOlder(bool isLoading) {
     if (isLoading || _sortedDaysWithTransactions.isEmpty) return false;
     int currentIndex = _sortedDaysWithTransactions.indexWhere(
@@ -191,6 +235,13 @@ class _TransactionsLogScreenState extends State<TransactionsLogScreen> {
       appBar: AppBar(
         title: Text(formattedDate),
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.calendar_today),
+            onPressed:
+                _sortedDaysWithTransactions.isEmpty ? null : _openDatePicker,
+          ),
+        ],
       ),
       body: Stack( // Changed from Column to Stack
         children: [
