@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 // import 'package:fl_chart/fl_chart.dart'; // Removed fl_chart import
 import 'package:payments_tracker_flutter/database/tables/transaction_table.dart';
 import 'package:payments_tracker_flutter/global_variables/chosen_account.dart';
+import 'package:payments_tracker_flutter/screens/daily_details_screen.dart';
 // import 'add_edit_transaction_screen.dart' show TransactionType; // Assuming not needed for this change
 
 // Placeholder for the daily details screen - you'll need to create this
@@ -352,15 +353,16 @@ class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
 
         trailing: Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey.shade600),
         onTap: () {
-          // TODO: Navigate to DailyDetailsScreen
-          // Navigator.push(
-          //   context,
-          //   MaterialPageRoute(
-          //     builder: (context) => DailyDetailsScreen(selectedDate: specificDate, accountId: ChosenAccount().account?.id),
-          //   ),
-          // );
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Not implemented, Navigate to details for Day $dayNumber (${DateFormat.yMd().format(specificDate)})')),
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => DailyDetailsScreen(
+                selectedDate: specificDate,
+                accountId: ChosenAccount().account?.id,
+                dailyNet: dailyNet,
+                cumulativeBalance: cumulativeBalance,
+              ),
+            ),
           );
         },
       ),
