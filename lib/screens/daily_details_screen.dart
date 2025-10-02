@@ -25,14 +25,14 @@ class _DailyDetailsScreenState extends State<DailyDetailsScreen> {
   late Future<List<TransactionModel>> _transactionsFuture;
 
   final Color _pageBackgroundColor = Colors.white;
-  final Color _primaryTextColor = Colors.deepPurple.shade700;
-  final Color _secondaryTextColor = Colors.deepPurple.shade300;
-  final Color _chipBackgroundColor = Colors.deepPurple.shade50;
-  final Color _chipTextColor = Colors.deepPurple.shade600;
+  final Color _primaryTextColor = Colors.blue.shade800;
+  final Color _secondaryTextColor = Colors.blueGrey.shade600;
+  final Color _chipBackgroundColor = Colors.blue.shade50;
+  final Color _chipTextColor = Colors.blue.shade700;
   final LinearGradient _summaryGradient = LinearGradient(
     colors: [
-      Colors.deepPurple.shade50,
-      Colors.white,
+      Colors.blue.shade100,
+      Colors.blue.shade50,
     ],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
@@ -61,9 +61,9 @@ class _DailyDetailsScreenState extends State<DailyDetailsScreen> {
 
     Color netColor;
     if (net > 0) {
-      netColor = Colors.green.shade700;
+      netColor = Colors.green.shade600;
     } else if (net < 0) {
-      netColor = Colors.red.shade700;
+      netColor = Colors.red.shade600;
     } else {
       netColor = _primaryTextColor;
     }
@@ -79,12 +79,20 @@ class _DailyDetailsScreenState extends State<DailyDetailsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Summary for ${DateFormat('MMMM d').format(widget.selectedDate)}',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: _primaryTextColor,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    'Summary for ${DateFormat('MMMM d').format(widget.selectedDate)}',
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: _primaryTextColor,
+                        ),
                   ),
+                ),
+                Icon(Icons.assessment, color: Colors.blue.shade700, size: 28),
+              ],
             ),
             const SizedBox(height: 18),
             Row(
@@ -95,7 +103,7 @@ class _DailyDetailsScreenState extends State<DailyDetailsScreen> {
               ],
             ),
             const SizedBox(height: 18),
-            const Divider(height: 1, thickness: 0.4),
+            Divider(color: Colors.blue.shade200, thickness: 1),
             const SizedBox(height: 18),
             _buildBalanceRow(
               label: 'Net Daily Flow',
@@ -105,12 +113,36 @@ class _DailyDetailsScreenState extends State<DailyDetailsScreen> {
               fontSize: 16,
             ),
             const SizedBox(height: 12),
-            _buildBalanceRow(
-              label: 'End of Day Balance',
-              amount: cumulativeBalance != null ? cumulativeBalance.toStringAsFixed(2) : 'N/A',
-              color: cumulativeBalance != null ? _primaryTextColor : _secondaryTextColor,
-              isBold: true,
-              fontSize: 16,
+            Row(
+              children: [
+                Icon(Icons.account_balance_wallet, color: Colors.indigo.shade600, size: 22),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'End of Day Balance',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.indigo.shade700,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Padding(
+              padding: const EdgeInsets.only(left: 32.0),
+              child: Text(
+                cumulativeBalance != null ? cumulativeBalance.toStringAsFixed(2) : 'N/A',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: cumulativeBalance != null
+                      ? (cumulativeBalance >= 0 ? Colors.indigo.shade900 : Colors.red.shade900)
+                      : _secondaryTextColor,
+                ),
+              ),
             ),
           ],
         ),
@@ -125,7 +157,7 @@ class _DailyDetailsScreenState extends State<DailyDetailsScreen> {
         Text(
           label,
           style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                color: _primaryTextColor.withOpacity(0.75),
+                color: _secondaryTextColor,
                 fontWeight: FontWeight.w600,
               ),
         ),
@@ -156,7 +188,7 @@ class _DailyDetailsScreenState extends State<DailyDetailsScreen> {
           style: TextStyle(
             fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
             fontSize: fontSize ?? Theme.of(context).textTheme.bodyMedium?.fontSize,
-            color: _primaryTextColor.withOpacity(isBold ? 0.95 : 0.8),
+            color: _secondaryTextColor.withOpacity(isBold ? 0.95 : 0.75),
           ),
         ),
         Text(
@@ -204,7 +236,7 @@ class _DailyDetailsScreenState extends State<DailyDetailsScreen> {
       itemBuilder: (context, index) {
         final transaction = transactions[index];
         final bool isIncome = transaction.amount >= 0;
-        final Color baseColor = isIncome ? Colors.green.shade700 : Colors.red.shade700;
+        final Color baseColor = isIncome ? Colors.green.shade600 : Colors.red.shade600;
         final Color lightBackgroundColor = isIncome
             ? Colors.green.shade50.withOpacity(0.6)
             : Colors.red.shade50.withOpacity(0.6);
@@ -260,15 +292,15 @@ class _DailyDetailsScreenState extends State<DailyDetailsScreen> {
       appBar: AppBar(
         title: Text(
           formattedDate,
-          style: TextStyle(
-            color: _primaryTextColor,
+          style: const TextStyle(
+            color: Colors.white,
             fontWeight: FontWeight.bold,
           ),
         ),
         centerTitle: true,
         elevation: 1, // Subtle elevation for AppBar
-        backgroundColor: Colors.white, // AppBar background
-        foregroundColor: _primaryTextColor, // AppBar text/icon color
+        backgroundColor: Colors.blue.shade700, // AppBar background
+        foregroundColor: Colors.white, // AppBar text/icon color
       ),
       body: FutureBuilder<List<TransactionModel>>(
         future: _transactionsFuture,
