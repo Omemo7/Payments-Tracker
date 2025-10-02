@@ -102,6 +102,49 @@ class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
     await _loadDataForSelectedMonth();
   }
 
+  Future<void> _openMonthPicker() async {
+    if (_availableMonths.isEmpty) {
+      return;
+    }
+
+    final int? selectedIndex = await showDialog<int>(
+      context: context,
+      builder: (context) {
+        return SimpleDialog(
+          title: const Text('Select Month'),
+          children: [
+            SizedBox(
+              width: double.maxFinite,
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: _availableMonths.length,
+                itemBuilder: (context, index) {
+                  final DateTime monthDate = _availableMonths[index];
+                  final String formattedMonth = DateFormat.yMMMM().format(monthDate);
+                  return ListTile(
+                    title: Text(formattedMonth),
+                    selected: index == _currentMonthIndex,
+                    onTap: () => Navigator.of(context).pop(index),
+                  );
+                },
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (selectedIndex != null &&
+        selectedIndex >= 0 &&
+        selectedIndex < _availableMonths.length &&
+        selectedIndex != _currentMonthIndex) {
+      setState(() {
+        _currentMonthIndex = selectedIndex;
+      });
+      await _loadDataForSelectedMonth();
+    }
+  }
+
   String get _formattedCurrentMonth {
     if (_currentMonthIndex < 0 || _currentMonthIndex >= _availableMonths.length) {
       return "No data";
@@ -415,6 +458,12 @@ class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
       appBar: AppBar(
         title: const Text('Monthly Summary'),
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.calendar_today),
+            onPressed: _availableMonths.isEmpty ? null : () async => await _openMonthPicker(),
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
