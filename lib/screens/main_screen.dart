@@ -85,44 +85,62 @@ class _MainScreenState extends State<MainScreen> {
           mainAxisAlignment: MainAxisAlignment.start, // Changed to start
           children: <Widget>[
             SizedBox(height: MediaQuery.of(context).size.height * 0.15), // Added space at the top
-            Text(
-              'Total Balance',
-              style: TextStyle(
-                fontSize: 18,
-                color: AppColors.purple.withOpacity(0.7),
+
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  children: [
+                    const SizedBox(height: 10),
+                    FutureBuilder<double>(
+                      future: _currentBalanceFuture,
+                      builder: (context, snapshot) {
+                          if (snapshot.connectionState == ConnectionState.waiting) {
+                            return const CircularProgressIndicator();
+                          } else if (snapshot.hasError) {
+                            return Text('Error: ${snapshot.error}');
+                          } else {
+                            final balance = snapshot.data ?? 0.0;
+                            final color = balance >= 0
+                                ? AppColors.incomeGreen
+                                : AppColors.expenseRed;
+                            return Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.account_balance_wallet_outlined,
+                                  color: color,
+                                  size: 36,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  balance.toStringAsFixed(2),
+                                  style: TextStyle(
+                                    fontSize: 36,
+                                    fontWeight: FontWeight.w600,
+                                    color: color,
+                                  ),
+                                ),
+                              ],
+                            );
+                          }
+                      },
+                    ),
+                  ],
+                ),
               ),
-            ),
-            FutureBuilder<double>(
-              future: _currentBalanceFuture,
-              builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const CircularProgressIndicator();
-                  } else if (snapshot.hasError) {
-                    return Text('Error: ${snapshot.error}');
-                  } else {
-                    final balance = snapshot.data ?? 0.0;
-                    final color = balance >= 0
-                        ? AppColors.incomeGreen
-                        : AppColors.expenseRed;
-                    return Text(
-                      '${balance.toStringAsFixed(2)}',
-                      style: TextStyle(
-                        fontSize: 36,
-                        fontWeight: FontWeight.w600,
-                        color: color,
-                      ),
-                    );
-                  }
-              },
-            ),
-            const SizedBox(height: 30),
+
+            const SizedBox(height: 10),
             ElevatedButton.icon(
               icon: const Icon(Icons.list_alt_outlined),
               label: const Text('Transactions Log'),
               style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 15.0, horizontal: 24.0),
+                padding:
+                    const EdgeInsets.symmetric(vertical: 15.0, horizontal: 24.0),
                 shape: const StadiumBorder(),
                 minimumSize: const Size(275, 60),
+                backgroundColor: Colors.white,
+                foregroundColor: AppColors.purple,
+                side: BorderSide(color:  AppColors.purple.withOpacity(.4), width: 1),
               ),
               onPressed: () {
                 Navigator.push(
@@ -139,6 +157,9 @@ class _MainScreenState extends State<MainScreen> {
                 padding: const EdgeInsets.symmetric(vertical: 15.0, horizontal: 24.0),
                 shape: const StadiumBorder(),
                 minimumSize: const Size(275, 60),
+                backgroundColor: Colors.white,
+                foregroundColor: AppColors.purple,
+                side: BorderSide(color: AppColors.purple.withOpacity(.4), width: 1),
               ),
               onPressed: () {
                 Navigator.push(

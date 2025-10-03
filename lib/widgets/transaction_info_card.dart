@@ -1,125 +1,260 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart'; // For date formatting
-// Assuming TransactionType is in add_edit_transaction_screen.dart
-// If it's moved to a common file, this import will need to change.
-import '../screens/add_edit_transaction_screen.dart'; // For TransactionType
+import 'package:intl/intl.dart';
+import '../screens/add_edit_transaction_screen.dart'; // TransactionType
 import '../models/transaction_model.dart';
 import '../global_variables/app_colors.dart';
+import 'basic/basic_card.dart';
 
 class TransactionInfoCard extends StatelessWidget {
   final TransactionModel transaction;
   final double balance;
   final TransactionType transactionType;
-  final VoidCallback onEditPressed; // Will be wrapped
-  final VoidCallback onDeletePressed; // Will be wrapped
-  final DateTime todayDate; // New required parameter
+  final VoidCallback onEditPressed;
+  final VoidCallback onDeletePressed;
+  final DateTime todayDate;
 
   const TransactionInfoCard({
     super.key,
     required this.transaction,
     required this.balance,
     required this.transactionType,
-    required VoidCallback onEditPressed, // Original callbacks
-    required VoidCallback onDeletePressed,
+    required this.onEditPressed,
+    required this.onDeletePressed,
     required this.todayDate,
-  })  :
-        // Wrap the original callbacks with the date check
-        this.onEditPressed = onEditPressed,
-        this.onDeletePressed = onDeletePressed;
-
-  DateTime _normalizeDate(DateTime dateTime) {
-    return DateTime(dateTime.year, dateTime.month, dateTime.day);
-  }
+  });
 
   @override
   Widget build(BuildContext context) {
     final bool isIncome = transactionType == TransactionType.income;
     final Color amountColor =
-        isIncome ? AppColors.incomeGreen : AppColors.expenseRed;
+    isIncome ? AppColors.incomeGreen : AppColors.expenseRed;
     final String amountPrefix = isIncome ? '+' : '';
 
-    return Card(
+    final String dateStr = DateFormat.yMMMd().format(transaction.createdAt);
+    final String timeStr = DateFormat.jm().format(transaction.createdAt);
+
+    return BasicCard(
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
+          children: [
+            // HEADER: date/time chips + income/expense label
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Date: ${DateFormat.yMd().format(transaction.createdAt)}',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    color: AppColors.purple,
-                  ),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _InfoChip(icon: Icons.event, label: dateStr),
+                    _InfoChip(icon: Icons.schedule, label: timeStr),
+                  ],
                 ),
-                Text(
-                  'Time: ${DateFormat.jm().format(transaction.createdAt)}',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    color: AppColors.purple,
+                const Spacer(),
+                Padding(
+                  padding: const EdgeInsets.only(top: 5.0, right: 5),
+                  child: Text(
+                    isIncome ? 'Income' : 'Expense',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: isIncome
+                          ? AppColors.incomeGreen
+                          : AppColors.expenseRed,
+                    ),
                   ),
                 ),
               ],
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Amount: $amountPrefix${transaction.amount.toStringAsFixed(2)}',
-              style: TextStyle(
-                fontSize: 20, // Updated size
-                fontWeight: FontWeight.bold,
-                color: amountColor,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'Balance: ${balance.toStringAsFixed(2)}',
-              style: TextStyle(
-                fontSize: 15, // Updated size
-                fontWeight: FontWeight.bold,
-                color:
-                    balance >= 0 ? AppColors.incomeGreen : AppColors.expenseRed,
-              ),
             ),
 
-            const SizedBox(height: 12),
-            if (transaction.note != null && transaction.note!.isNotEmpty) ...[
-              Text(
-                'Notes: ${transaction.note}',
-                style: const TextStyle(
-                  fontSize: 20,
-                  color: AppColors.purple,
-                ), // Updated style
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-              ),
+            const SizedBox(height: 14),
+
+            // BALANCE pill
+            _BalancePill(balance: balance),
+
+            // NOTES (if any)
+            if (transaction.note != null &&
+                transaction.note!.trim().isNotEmpty) ...[
               const SizedBox(height: 12),
+              _NotesBox(note: transaction.note!.trim()),
             ],
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: <Widget>[
-                TextButton.icon(
-                  icon: const Icon(Icons.edit),
-                  label: const Text('Edit'),
-                  onPressed: onEditPressed,
-                  style: TextButton.styleFrom(
-                    foregroundColor: AppColors.purple,
+
+            const SizedBox(height: 10),
+            const Divider(height: 1),
+
+            // FOOTER: amount + action buttons
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // Amount
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Amount: $amountPrefix${transaction.amount.toStringAsFixed(2)}',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w600,
+                          color: amountColor,
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-                const SizedBox(width: 8),
-                TextButton.icon(
-                  icon: const Icon(Icons.delete),
-                  label: const Text('Delete'),
-                  onPressed: onDeletePressed,
-                  style: TextButton.styleFrom(
-                    foregroundColor: AppColors.expenseRed,
+                  const Spacer(),
+                  // Action buttons
+                  Wrap(
+                    spacing: 8,
+                    children: [
+                      OutlinedButton.icon(
+                        icon: const Icon(Icons.edit, size: 18),
+                        label: const Text('Edit'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.purple,
+                          side: const BorderSide(color: AppColors.purple),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 10),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        onPressed: onEditPressed,
+                      ),
+                      OutlinedButton.icon(
+                        icon: const Icon(Icons.delete, size: 18),
+                        label: const Text('Delete'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.expenseRed,
+                          side: const BorderSide(color: AppColors.expenseRed),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 10),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        onPressed: onDeletePressed,
+                      ),
+                    ],
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+
+/// purple chip for date/time
+class _InfoChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  const _InfoChip({required this.icon, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: AppColors.purple.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.purple.withOpacity(0.18)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: AppColors.purple),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 13,
+              color: AppColors.purple,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// balance pill
+class _BalancePill extends StatelessWidget {
+  final double balance;
+  const _BalancePill({required this.balance});
+
+  @override
+  Widget build(BuildContext context) {
+    final bool positive = balance >= 0;
+    final Color textColor = positive ? AppColors.greyishGreen : AppColors.greyishRed;
+    final Color bg = positive
+        ? AppColors.greyishGreen.withOpacity(0.10)
+        : AppColors.greyishRed.withOpacity(0.10);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            positive ? Icons.trending_up : Icons.trending_down,
+            color: textColor,
+            size: 18,
+          ),
+          const SizedBox(width: 8),
+          Text(
+            'Balance: ${balance.toStringAsFixed(2)}',
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: textColor,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// notes box
+class _NotesBox extends StatelessWidget {
+  final String note;
+  const _NotesBox({required this.note});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+      decoration: BoxDecoration(
+        color: AppColors.purple.withOpacity(0.06),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.purple.withOpacity(0.12)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.notes, color: AppColors.purple, size: 18),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              note,
+              maxLines: 4,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 14.5,
+                color: AppColors.purple,
+                height: 1.35,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -4,6 +4,9 @@ import 'package:payments_tracker_flutter/database/tables/transaction_table.dart'
 import 'package:payments_tracker_flutter/models/transaction_model.dart';
 import 'package:payments_tracker_flutter/global_variables/app_colors.dart';
 
+import '../widgets/transaction_list_tile_card.dart';
+import '../widgets/transaction_stat_chip_card.dart';
+
 class DailyDetailsScreen extends StatefulWidget {
   final DateTime selectedDate;
   final int? accountId;
@@ -86,20 +89,26 @@ class _DailyDetailsScreenState extends State<DailyDetailsScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildStatChip(
-                  'Income',
-                  incomeTotal.toStringAsFixed(2),
-                  AppColors.incomeGreen.withOpacity(0.12),
-                  AppColors.incomeGreen,
+                Expanded(
+                  child: TransactionStatChipCard(
+                    label: 'Income',
+                    value: incomeTotal.toStringAsFixed(2),
+                    backgroundColor: AppColors.incomeGreen.withOpacity(0.12),
+                    textColor: AppColors.incomeGreen,
+                  ),
                 ),
-                _buildStatChip(
-                  'Expense',
-                  expenseTotal.abs().toStringAsFixed(2),
-                  AppColors.expenseRed.withOpacity(0.12),
-                  AppColors.expenseRed,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TransactionStatChipCard(
+                    label: 'Expense',
+                    value: expenseTotal.abs().toStringAsFixed(2),
+                    backgroundColor: AppColors.expenseRed.withOpacity(0.12),
+                    textColor: AppColors.expenseRed,
+                  ),
                 ),
               ],
             ),
+
             const SizedBox(height: 18),
             Divider(color: AppColors.subtlePurple.withOpacity(0.2), thickness: 1),
             const SizedBox(height: 18),
@@ -153,33 +162,7 @@ class _DailyDetailsScreenState extends State<DailyDetailsScreen> {
     );
   }
 
-  // Helper widget for Income/Expense chips
-  Widget _buildStatChip(String label, String value, Color backgroundColor, Color textColor) {
-    return Column(
-      children: [
-        Text(
-          label,
-          style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                color: _secondaryTextColor,
-                fontWeight: FontWeight.w600,
-              ),
-        ),
-        const SizedBox(height: 4),
-        Chip(
-          backgroundColor: backgroundColor,
-          padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
-          label: Text(
-            value,
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: textColor,
-              fontSize: 16,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
+
 
   // Helper widget for balance rows
   Widget _buildBalanceRow({required String label, required String amount, required Color color, bool isBold = false, double? fontSize}) {
@@ -244,43 +227,10 @@ class _DailyDetailsScreenState extends State<DailyDetailsScreen> {
         final Color lightBackgroundColor = baseColor.withOpacity(0.12);
         final String amountPrefix = isIncome ? '+' : '';
 
-        return Card( // Wrap ListTile in a Card for better definition
-          margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 6.0),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          child: ListTile(
-            leading: CircleAvatar(
-              backgroundColor: lightBackgroundColor,
-              child: Icon(
-                isIncome ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded, // Rounded icons
-                color: baseColor,
-                size: 20, // Slightly smaller icon
-              ),
-            ),
-            title: Text(
-              transaction.note != null && transaction.note!.isNotEmpty
-                  ? transaction.note!
-                  : 'No description',
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 15,
-                color: _primaryTextColor,
-              ),
-            ),
-            subtitle: Text(
-              DateFormat.jm().format(transaction.createdAt),
-              style: TextStyle(
-                  color: _primaryTextColor.withOpacity(0.6), fontSize: 13),
-            ),
-            trailing: Text(
-              '$amountPrefix${transaction.amount.toStringAsFixed(2)}',
-              style: TextStyle(
-                color: baseColor,
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
-            ),
-          ),
+        return TransactionListTileCard(
+          transaction: transaction,
         );
+
       },
     );
   }

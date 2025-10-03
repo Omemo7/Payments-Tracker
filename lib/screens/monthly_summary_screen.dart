@@ -4,8 +4,11 @@ import 'package:intl/intl.dart';
 import 'package:payments_tracker_flutter/database/tables/transaction_table.dart';
 import 'package:payments_tracker_flutter/widgets/navigation_buttons.dart';
 import 'package:payments_tracker_flutter/global_variables/chosen_account.dart';
+import 'package:payments_tracker_flutter/widgets/daily_summary_card.dart';
 import 'package:payments_tracker_flutter/screens/daily_details_screen.dart';
 import 'package:payments_tracker_flutter/global_variables/app_colors.dart';
+
+import '../widgets/monthly_summary_card.dart';
 // import 'add_edit_transaction_screen.dart' show TransactionType; // Assuming not needed for this change
 
 // Placeholder for the daily details screen - you'll need to create this
@@ -115,35 +118,29 @@ class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
     await _loadDataForSelectedMonth();
   }
 
- Future<void> _openMonthPicker() async {
+  Future<void> _openMonthPicker() async {
     if (_availableMonths.isEmpty) {
       return;
     }
 
+    // Group months by year
+    final Map<int, List<DateTime>> monthsByYear = {};
+    for (var month in _availableMonths) {
+      if (!monthsByYear.containsKey(month.year)) {
+        monthsByYear[month.year] = [];
+      }
+      monthsByYear[month.year]!.add(month);
+    }
+    final List<int> years = monthsByYear.keys.toList()..sort((a, b) => b.compareTo(a));
+
     final int? selectedIndex = await showDialog<int>(
       context: context,
       builder: (context) {
-        return SimpleDialog(
-          title: const Text('Select Month'),
-          children: [
-            SizedBox(
-              width: double.maxFinite,
-              child: ListView.builder(
-                shrinkWrap: true,
-                itemCount: _availableMonths.length,
-                itemBuilder: (context, index) {
-                  final DateTime monthDate = _availableMonths[index];
-                  final String formattedMonth = DateFormat.yMMMM().format(monthDate);
-                  return ListTile(
-                    title: Text(formattedMonth),
-                    selected: index == _currentMonthIndex,
-                    onTap: () => Navigator.of(context).pop(index),
-                  );
-                },
-              ),
-            ),
-          ],
-        );
+        return _YearMonthPicker(
+            years: years,
+            monthsByYear: monthsByYear,
+            availableMonths: _availableMonths,
+            currentMonthIndex: _currentMonthIndex);
       },
     );
 
@@ -406,50 +403,11 @@ class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
     final DateTime specificDate = DateTime(currentMonthDateTime.year, currentMonthDateTime.month, dayNumber);
 
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-        title: Text(
-          'Day $dayNumber - ${DateFormat.EEEE().format(specificDate)}', // e.g., Day 15 - Monday
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            color: AppColors.purple,
-          ),
-        ),
-        // subtitle: Text(
-        //   'Net: ${dailyNet.toStringAsFixed(2)}, Cumulative Balance: ${cumulativeBalance.toStringAsFixed(2)}',
-        //   style: TextStyle(
-        //     color: dailyNet >= 0 ? Colors.green.shade700 : Colors.red.shade700,
-        //     fontWeight: FontWeight.w500,
-        //   ),
-        // ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 4.0), // Added spacing
-            Text(
-              'Net: ${dailyNet.toStringAsFixed(2)}',
-              style: TextStyle(
-                color: dailyNet >= 0
-                    ? AppColors.incomeGreen
-                    : AppColors.expenseRed,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(height: 2.0), // Added spacing
-            Text(
-              'Balance: ${cumulativeBalance.toStringAsFixed(2)}',
-              style: TextStyle(
-                color: AppColors.purple.withOpacity(0.7),
-                fontSize: 13,
-              ),
-            ),
-            const SizedBox(height: 4.0), // Added spacing at the end if needed for overall padding
-          ],
-        ),
-
-        trailing: Icon(Icons.arrow_forward_ios,
-            size: 16, color: AppColors.purple.withOpacity(0.4)),
+      elevation: 2,
+      margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 6.0),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
         onTap: () {
           Navigator.push(
             context,
@@ -463,8 +421,138 @@ class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
             ),
           );
         },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 12.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header: date badge + title + chevron
+              Row(
+                children: [
+                  // Date badge
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: AppColors.purple.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppColors.purple.withOpacity(0.18)),
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      '$dayNumber',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.purple,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  // Title: Day X - Weekday
+                  Expanded(
+                    child: Text(
+                      'Day $dayNumber - ${DateFormat.EEEE().format(specificDate)}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.purple,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                  Icon(Icons.arrow_forward_ios,
+                      size: 16, color: AppColors.purple.withOpacity(0.4)),
+                ],
+              ),
+
+              const SizedBox(height: 12),
+
+              // Stat pills: Net + Balance
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  // Net pill
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: (dailyNet >= 0
+                          ? AppColors.greyishGreen
+                          : AppColors.greyishRed)
+                          .withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          dailyNet >= 0 ? Icons.trending_up : Icons.trending_down,
+                          size: 18,
+                          color: dailyNet >= 0
+                              ? AppColors.greyishGreen
+                              : AppColors.greyishRed,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Net: ${dailyNet.toStringAsFixed(2)}',
+                          style: TextStyle(
+                            fontSize: 14.5,
+                            fontWeight: FontWeight.w600,
+                            color: dailyNet >= 0
+                                ? AppColors.greyishGreen
+                                : AppColors.greyishRed,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Balance pill
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: (cumulativeBalance >= 0
+                          ? AppColors.greyishGreen
+                          : AppColors.greyishRed)
+                          .withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          cumulativeBalance >= 0
+                              ? Icons.account_balance_wallet
+                              : Icons.account_balance_wallet_outlined,
+                          size: 18,
+                          color: cumulativeBalance >= 0
+                              ? AppColors.greyishGreen
+                              : AppColors.greyishRed,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Balance: ${cumulativeBalance.toStringAsFixed(2)}',
+                          style: TextStyle(
+                            fontSize: 14.5,
+                            fontWeight: FontWeight.w600,
+                            color: cumulativeBalance >= 0
+                                ? AppColors.greyishGreen
+                                : AppColors.greyishRed,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
+
   }
 
   Widget _buildDailyTransactionCards() {
@@ -506,7 +594,11 @@ class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
       itemCount: daysWithTransactions.length,
       itemBuilder: (context, index) {
         final data = daysWithTransactions[index];
-        return _dailyTransactionCard(data, currentMonthDateTime);
+        return DailySummaryCard(
+          specificDate: DateTime(currentMonthDateTime.year, currentMonthDateTime.month, data['dayNumber'] as int),
+          dailyNet: data['dailyNet'] as double,
+          cumulativeBalance: data['cumulativeBalance'] as double,
+        );
       },
     );
   }
@@ -530,104 +622,13 @@ class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
           children: [
 
             const SizedBox(height: 10),
-            Material(
-              elevation: 4.0,
-              shadowColor: AppColors.subtlePurple.withOpacity(0.15),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(15.0),
-              ),
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(15.0),
-                  color: AppColors.offWhite,
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Summary: $_formattedCurrentMonth',
-                            style: const TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.purple,
-                            ),
-                          ),
-                          const Icon(Icons.assessment,
-                              color: AppColors.purple, size: 28),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Divider(color: AppColors.subtlePurple.withOpacity(0.2), thickness: 1),
-                      const SizedBox(height: 16),
-                      _buildSummaryRow(
-                        label: 'Income',
-                        value: _selectedMonthIncome,
-                        icon: Icons.arrow_upward,
-                        color: AppColors.incomeGreen,
-                      ),
-                      const SizedBox(height: 10),
-                      _buildSummaryRow(
-                        label: 'Expense',
-                        value: _selectedMonthExpense,
-                        icon: Icons.arrow_downward,
-                        color: AppColors.expenseRed,
-                      ),
-                      const SizedBox(height: 10),
-                      _buildSummaryRow(
-                        label: 'Net Balance',
-                        value: _selectedMonthNet,
-                        icon: _selectedMonthNet >= 0
-                            ? Icons.trending_up
-                            : Icons.trending_down,
-                        color: _selectedMonthNet >= 0
-                            ? AppColors.incomeGreen
-                            : AppColors.expenseRed,
-                        isBold: true,
-                      ),
-                      const SizedBox(height: 16),
-                      Divider(color: AppColors.subtlePurple.withOpacity(0.2), thickness: 1),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          const Icon(Icons.account_balance_wallet,
-                              color: AppColors.purple, size: 22),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              'Overall Balance (End of Month):',
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.purple,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      Padding(
-                        padding: const EdgeInsets.only(left: 32.0),
-                        child: Text(
-                          _overallBalanceAtEndOfSelectedMonth.toStringAsFixed(2),
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: _overallBalanceAtEndOfSelectedMonth >= 0
-                                ? AppColors.incomeGreen
-                                : AppColors.expenseRed,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+            MonthlySummaryCard(
+              currentMonth: (_currentMonthIndex >= 0 && _currentMonthIndex < _availableMonths.length)
+                  ? _availableMonths[_currentMonthIndex]
+                  : DateTime.now(), // Fallback for no data
+              income: _selectedMonthIncome,
+              expense: _selectedMonthExpense,
+              overallBalanceEndOfMonth: _overallBalanceAtEndOfSelectedMonth,
             ),
             const SizedBox(height: 20),
             Expanded(
@@ -687,3 +688,128 @@ class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
     );
   }
 }
+
+class _YearMonthPicker extends StatefulWidget {
+  final List<int> years;
+  final Map<int, List<DateTime>> monthsByYear;
+  final List<DateTime> availableMonths;
+  final int currentMonthIndex;
+
+  const _YearMonthPicker({
+    required this.years,
+    required this.monthsByYear,
+    required this.availableMonths,
+    required this.currentMonthIndex,
+  });
+
+  @override
+  State<_YearMonthPicker> createState() => _YearMonthPickerState();
+}
+
+class _YearMonthPickerState extends State<_YearMonthPicker> {
+  int? _selectedYear;
+  String _searchText = '';
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(_selectedYear == null ? 'Select Year' : 'Select Month for $_selectedYear'),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 20),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12.0),
+              child: TextField(
+                onChanged: (value) => setState(() => _searchText = value),
+                decoration: InputDecoration(
+                  labelText: 'Search',
+                  hintText: _selectedYear == null ? 'Search Year...' : 'Search Month...',
+                  prefixIcon: const Icon(Icons.search),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            if (_selectedYear == null)
+              _buildYearList()
+            else
+              _buildMonthList(_selectedYear!),
+          ],
+        ),
+      ),
+      actions: [
+        if (_selectedYear != null)
+          TextButton(
+            onPressed: () => setState(() => _selectedYear = null),
+            child: const Text('Back to Years'),
+          ),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildYearList() {
+    final filteredYears = widget.years
+        .where((year) => year.toString().contains(_searchText))
+        .toList();
+
+    return Flexible(
+      child: ListView.builder(
+        shrinkWrap: true,
+        itemCount: filteredYears.length,
+        itemBuilder: (context, index) {
+          final year = filteredYears[index];
+          final isSelected = widget.availableMonths.isNotEmpty &&
+              widget.currentMonthIndex != -1 &&
+              widget.availableMonths[widget.currentMonthIndex].year == year;
+
+          return ListTile(
+            title: Text(year.toString()),
+            selected: isSelected,
+            onTap: () => setState(() => _selectedYear = year),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildMonthList(int year) {
+    final months = widget.monthsByYear[year] ?? [];
+    final filteredMonths = months
+        .where((month) => DateFormat.MMMM()
+            .format(month)
+            .toLowerCase()
+            .contains(_searchText.toLowerCase()))
+        .toList();
+
+    return Flexible(
+      child: ListView.builder(
+        shrinkWrap: true,
+        itemCount: filteredMonths.length,
+        itemBuilder: (context, index) {
+          final monthDate = filteredMonths[index];
+          final formattedMonth = DateFormat.MMMM().format(monthDate);
+          final globalIndex = widget.availableMonths.indexOf(monthDate);
+
+          return ListTile(
+            title: Text(formattedMonth),
+            selected: globalIndex == widget.currentMonthIndex,
+            onTap: () {
+              if (globalIndex != -1) {
+                Navigator.of(context).pop(globalIndex);
+              }
+            },
+          );
+        },
+      ),
+    );
+  }
+}
+

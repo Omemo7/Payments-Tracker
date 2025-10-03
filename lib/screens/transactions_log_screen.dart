@@ -350,3 +350,5 @@ class _TransactionsLogScreenState extends State<TransactionsLogScreen> {
     );
   }
 }
+
+
