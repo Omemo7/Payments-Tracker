@@ -8,7 +8,7 @@ import 'package:payments_tracker_flutter/widgets/daily_summary_card.dart';
 import 'package:payments_tracker_flutter/screens/daily_details_screen.dart';
 import 'package:payments_tracker_flutter/global_variables/app_colors.dart';
 
-import '../widgets/monthly_summary_card.dart';
+import '../widgets/monthly_or_daily_details_card.dart';
 // import 'add_edit_transaction_screen.dart' show TransactionType; // Assuming not needed for this change
 
 // Placeholder for the daily details screen - you'll need to create this
@@ -622,13 +622,14 @@ class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
           children: [
 
             const SizedBox(height: 10),
-            MonthlySummaryCard(
-              currentMonth: (_currentMonthIndex >= 0 && _currentMonthIndex < _availableMonths.length)
+            MonthlyOrDailyDetailsCard(
+              isMonthly: true,
+              selectedDateTime: (_currentMonthIndex >= 0 && _currentMonthIndex < _availableMonths.length)
                   ? _availableMonths[_currentMonthIndex]
                   : DateTime.now(), // Fallback for no data
               income: _selectedMonthIncome,
               expense: _selectedMonthExpense,
-              overallBalanceEndOfMonth: _overallBalanceAtEndOfSelectedMonth,
+              overallBalanceEndOfMonthOrDay: _overallBalanceAtEndOfSelectedMonth,
             ),
             const SizedBox(height: 20),
             Expanded(

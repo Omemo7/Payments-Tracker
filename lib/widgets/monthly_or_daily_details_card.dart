@@ -3,21 +3,28 @@ import 'package:intl/intl.dart';
 import '../global_variables/app_colors.dart';
 import 'basic/basic_card.dart';
 
-class MonthlySummaryCard extends StatelessWidget {
-  final DateTime currentMonth;
+class MonthlyOrDailyDetailsCard extends StatelessWidget {
+  final DateTime selectedDateTime;
   final double income;
   final double expense;
-  final double overallBalanceEndOfMonth;
+  final double overallBalanceEndOfMonthOrDay;
+  final bool isMonthly;//if not then its daily
 
-  const MonthlySummaryCard({
+  const MonthlyOrDailyDetailsCard({
     super.key,
-    required this.currentMonth,
+    required this.selectedDateTime,
     required this.income,
     required this.expense,
-    required this.overallBalanceEndOfMonth,
+    required this.overallBalanceEndOfMonthOrDay,
+    required this.isMonthly,
   });
 
-  String get _formattedMonth => DateFormat.yMMMM().format(currentMonth);
+  String get _formattedDate =>
+      isMonthly ?
+      DateFormat.yMMMM().format(selectedDateTime)
+      : DateFormat.MMMMd().format(selectedDateTime);
+
+
   double get _net => income - expense;
 
   @override
@@ -33,7 +40,7 @@ class MonthlySummaryCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Summary: $_formattedMonth',
+                  'Details: $_formattedDate',
                   style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -84,10 +91,10 @@ class MonthlySummaryCard extends StatelessWidget {
               children: [
                 const Icon(Icons.account_balance_wallet, color: AppColors.purple, size: 22),
                 const SizedBox(width: 10),
-                const Expanded(
+                Expanded(
                   child: Text(
-                    'Overall Balance (End of Month):',
-                    style: TextStyle(
+                    'Overall Balance (End of ${isMonthly ? 'Month' : 'Day'})',
+                    style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                       color: AppColors.purple,
@@ -101,11 +108,11 @@ class MonthlySummaryCard extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(left: 32.0),
               child: Text(
-                overallBalanceEndOfMonth.toStringAsFixed(2),
+                overallBalanceEndOfMonthOrDay.toStringAsFixed(2),
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: overallBalanceEndOfMonth >= 0
+                  color: overallBalanceEndOfMonthOrDay >= 0
                       ? AppColors.incomeGreen
                       : AppColors.expenseRed,
                 ),
