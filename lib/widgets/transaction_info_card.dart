@@ -8,7 +8,7 @@ import 'basic/basic_card.dart';
 class TransactionInfoCard extends StatelessWidget {
   final TransactionModel transaction;
   final double balance;
-  final TransactionType transactionType;
+
   final VoidCallback onEditPressed;
   final VoidCallback onDeletePressed;
   final DateTime todayDate;
@@ -17,7 +17,7 @@ class TransactionInfoCard extends StatelessWidget {
     super.key,
     required this.transaction,
     required this.balance,
-    required this.transactionType,
+
     required this.onEditPressed,
     required this.onDeletePressed,
     required this.todayDate,
@@ -25,7 +25,7 @@ class TransactionInfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool isIncome = transactionType == TransactionType.income;
+    final bool isIncome = transaction.amount >= 0;
     final Color amountColor =
     isIncome ? AppColors.incomeGreen : AppColors.expenseRed;
     final String amountPrefix = isIncome ? '+' : '';
@@ -39,7 +39,7 @@ class TransactionInfoCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // HEADER: date/time chips + income/expense label
+
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -82,64 +82,44 @@ class TransactionInfoCard extends StatelessWidget {
             const SizedBox(height: 10),
             const Divider(height: 1),
 
-            // FOOTER: amount + action buttons
             Padding(
               padding: const EdgeInsets.only(top: 8),
               child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
+
                 children: [
-                  // Amount
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Amount: $amountPrefix${transaction.amount.toStringAsFixed(2)}',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w600,
-                          color: amountColor,
-                        ),
-                      ),
-                    ],
+                  // Amount text
+                  Text(
+                    'Amount: $amountPrefix${transaction.amount.toStringAsFixed(2)}',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: amountColor,
+                    ),
                   ),
+
                   const Spacer(),
                   // Action buttons
-                  Wrap(
-                    spacing: 8,
+                  Expanded(child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      OutlinedButton.icon(
-                        icon: const Icon(Icons.edit, size: 18),
-                        label: const Text('Edit'),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: AppColors.purple,
-                          side: const BorderSide(color: AppColors.purple),
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 10),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
+                      IconButton(
+                        icon: const Icon(Icons.edit, size: 22),
+                        color: AppColors.purple,
+                        tooltip: 'Edit',
                         onPressed: onEditPressed,
                       ),
-                      OutlinedButton.icon(
-                        icon: const Icon(Icons.delete, size: 18),
-                        label: const Text('Delete'),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: AppColors.expenseRed,
-                          side: const BorderSide(color: AppColors.expenseRed),
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 10),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
+                      IconButton(
+                        icon: const Icon(Icons.delete, size: 22),
+                        color: AppColors.expenseRed,
+                        tooltip: 'Delete',
                         onPressed: onDeletePressed,
                       ),
                     ],
-                  ),
+                  )),
                 ],
               ),
-            ),
+            )
+
           ],
         ),
       ),

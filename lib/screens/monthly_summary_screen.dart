@@ -47,12 +47,35 @@ class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
 
   Future<void> _initializeScreen() async {
     await _processAvailableMonths();
+    final DateTime now = DateTime.now();
+    // Find the index of the current system month (today's month) in _availableMonths
+    final int currentSystemMonthIndex = _availableMonths.indexWhere((month) => month.year == now.year && month.month == now.month);
+
+    // If the current month exists in our list of months with transactions...
+    if (currentSystemMonthIndex != -1) {
+      setState(() {
+        _currentMonthIndex = currentSystemMonthIndex;
+      });
+    } else {
+      // Otherwise, we still want to show the current month, even if it has no transactions.
+      // We add it to the list and sort again to maintain order.
+      final currentMonthStart = DateTime(now.year, now.month, 1);
+      if (!_availableMonths.contains(currentMonthStart)) {
+        _availableMonths.add(currentMonthStart);
+        _availableMonths.sort((a, b) => b.compareTo(a));
+        // After adding, we find its new index. It will likely be 0 if it's the newest.
+        _currentMonthIndex = _availableMonths.indexOf(currentMonthStart);
+      }
+    }
+    await _loadDataForSelectedMonth(showLoading: false);
+    /* // Old logic: Default to most recent month with transactions
     if (_availableMonths.isNotEmpty) {
       setState(() {
         _currentMonthIndex = 0; // Default to the most recent month
       });
       await _loadDataForSelectedMonth(showLoading: false);
     }
+    */
   }
 
   Future<void> _processAvailableMonths() async {
@@ -82,14 +105,12 @@ class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
 
     final Map<String, double> monthlySummary = await TransactionTable.getMonthlySummary(ChosenAccount().account?.id, selectedMonthDate);
 
-    final double overallBalanceAtEndOfMonth = chartDataForeachDayOfSelectedMonth.isNotEmpty ? chartDataForeachDayOfSelectedMonth.last['cumulativeBalance'] : 0.0;
-
     setState(() {
       _selectedMonthChartData = chartDataForeachDayOfSelectedMonth;
       _selectedMonthIncome = monthlySummary['income'] ?? 0.0;
       _selectedMonthExpense = monthlySummary['expense'] ?? 0.0;
       _selectedMonthNet = _selectedMonthIncome-_selectedMonthExpense;
-      _overallBalanceAtEndOfSelectedMonth = overallBalanceAtEndOfMonth;
+      _overallBalanceAtEndOfSelectedMonth = monthlySummary['overallBalance']??0;
       if (showLoading) _isLoading = false;
     });
   }
@@ -114,8 +135,26 @@ class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
     // Find the index of the current system month (today's month) in _availableMonths
     final DateTime now = DateTime.now();
     final int currentSystemMonthIndex = _availableMonths.indexWhere((month) => month.year == now.year && month.month == now.month);
-    setState(() { _currentMonthIndex = currentSystemMonthIndex != -1 ? currentSystemMonthIndex : 0; }); // Default to most recent if current not found
-    await _loadDataForSelectedMonth();
+    // If the current month is not found, we want to show a "no data" state for this month.
+    if (currentSystemMonthIndex == -1) {
+      // Even if the month is not in the list (no transactions), we still want to show its summary.
+      // We will calculate the summary for the current month.
+      setState(() {
+        _currentMonthIndex = -1; // Indicates no month is selected
+      });
+      // Manually calculate summary for the current month since it's not in our list.
+      final Map<String, double> monthlySummary = await TransactionTable.getMonthlySummary(ChosenAccount().account?.id, now);
+      setState(() {
+        _selectedMonthChartData = []; // No transactions this month
+        _selectedMonthIncome = monthlySummary['income'] ?? 0.0;
+        _selectedMonthExpense = monthlySummary['expense'] ?? 0.0;
+        _selectedMonthNet = (_selectedMonthIncome) - (_selectedMonthExpense);
+        _overallBalanceAtEndOfSelectedMonth = monthlySummary['overallBalance'] ?? 0.0;
+      });
+    } else {
+      setState(() { _currentMonthIndex = currentSystemMonthIndex; });
+      await _loadDataForSelectedMonth();
+    }
   }
 
   Future<void> _openMonthPicker() async {

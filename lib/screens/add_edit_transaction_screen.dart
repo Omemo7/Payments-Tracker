@@ -1,27 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; // Added for input formatters
-import 'package:intl/intl.dart'; // For date formatting
+import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import 'package:payments_tracker_flutter/global_variables/chosen_account.dart';
 import 'package:payments_tracker_flutter/models/transaction_model.dart';
 
 import '../database/tables/transaction_table.dart';
 
-// Define Enums
-enum TransactionType { income, expense }
-enum ScreenMode { add, edit }
+enum _TransactionType { income, expense } // internal only
 
 class AddEditTransactionScreen extends StatefulWidget {
-  final TransactionType transactionType;
-  final ScreenMode mode;
-  final TransactionModel? transactionToEdit;
+  final TransactionModel? transactionToEdit; // the ONLY incoming param
 
-  const AddEditTransactionScreen({
-    super.key,
-    required this.transactionType,
-    required this.mode,
-    this.transactionToEdit,
-  }) : assert(mode == ScreenMode.edit ? transactionToEdit != null : true,
-            'transactionToEdit cannot be null in edit mode');
+  const AddEditTransactionScreen({super.key, this.transactionToEdit});
 
   @override
   State<AddEditTransactionScreen> createState() => _AddEditTransactionScreenState();
@@ -30,18 +20,26 @@ class AddEditTransactionScreen extends StatefulWidget {
 class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
   final _notesController = TextEditingController();
   final _amountController = TextEditingController();
-  late DateTime _currentDateTime; // Initialized in initState
+
+  late bool _isEditMode;
+  late DateTime _currentDateTime;
+  late _TransactionType _selectedType;
 
   @override
   void initState() {
     super.initState();
-    if (widget.mode == ScreenMode.edit && widget.transactionToEdit != null) {
-      _notesController.text = widget.transactionToEdit!.note ?? '';
-      _amountController.text = widget.transactionToEdit!.amount.abs().toStringAsFixed(2);
-      _currentDateTime = widget.transactionToEdit!.createdAt;
+
+    _isEditMode = widget.transactionToEdit != null;
+
+    if (_isEditMode) {
+      final txn = widget.transactionToEdit!;
+      _notesController.text = txn.note ?? '';
+      _amountController.text = txn.amount.abs().toStringAsFixed(2);
+      _currentDateTime = txn.createdAt;
+      _selectedType = txn.amount >= 0 ? _TransactionType.income : _TransactionType.expense;
     } else {
-      // Add mode: always use current date and time
       _currentDateTime = DateTime.now();
+      _selectedType = _TransactionType.income; // default for Add, user can change
     }
   }
 
@@ -53,137 +51,84 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
   }
 
   Future<void> _addTransaction() async {
+    final double unsignedAmount = double.parse(_amountController.text);
 
-    double unsignedAmount = double.parse(_amountController.text);
-    TransactionModel txn = TransactionModel(
-      amount: widget.transactionType == TransactionType.income ? unsignedAmount : -1 * unsignedAmount,
+    final txn = TransactionModel(
+      amount: _selectedType == _TransactionType.income ? unsignedAmount : -unsignedAmount,
       note: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
       createdAt: _currentDateTime,
       accountId: ChosenAccount().account?.id,
     );
 
-    final int addedTransactionId = await TransactionTable.insertTransaction(txn);
-    if (addedTransactionId > 0) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Transaction added successfully')),
-        );
-        Navigator.pop(context, true);
-      }
+    final int id = await TransactionTable.insertTransaction(txn);
+    if (!mounted) return;
+    if (id > 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Transaction added successfully')),
+      );
+      Navigator.pop(context, true);
     } else {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Error adding transaction')),
-        );
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Error adding transaction')),
+      );
     }
   }
 
   Future<void> _editTransaction() async {
-    double unsignedAmount = double.parse(_amountController.text);
-    TransactionModel updatedTxn = TransactionModel(
+    final double unsignedAmount = double.parse(_amountController.text);
+
+    final updated = TransactionModel(
       id: widget.transactionToEdit!.id,
-      amount: widget.transactionType == TransactionType.income ? unsignedAmount : -1 * unsignedAmount,
+      amount: _selectedType == _TransactionType.income ? unsignedAmount : -unsignedAmount,
       note: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
       createdAt: _currentDateTime,
       accountId: ChosenAccount().account?.id,
     );
 
-    final int rowsAffected = await TransactionTable.updateTransaction(updatedTxn);
-    if (rowsAffected > 0) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Transaction updated successfully')),
-        );
-        Navigator.pop(context, true);
-      }
+    final int rows = await TransactionTable.updateTransaction(updated);
+    if (!mounted) return;
+    if (rows > 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Transaction updated successfully')),
+      );
+      Navigator.pop(context, true);
     } else {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Error updating transaction or no changes made')),
-        );
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Error updating transaction or no changes made')),
+      );
     }
   }
 
-  Future<void> onAddEditButtonPressed() async {
-    if (_amountController.text.isEmpty) { // Notes field check removed
+  Future<void> _onSavePressed() async {
+    if (_amountController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill in the amount.')), // Updated message
+        const SnackBar(content: Text('Please fill in the amount.')),
       );
       return;
     }
     try {
       double.parse(_amountController.text);
-    } catch (e) {
+    } catch (_) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Invalid amount format')),
       );
       return;
     }
 
-    switch (widget.mode) {
-      case ScreenMode.add:
-        await _addTransaction();
-        break;
-      case ScreenMode.edit:
-        await _editTransaction();
-        break;
-    }
-  }
-  
-  // _selectDate and _selectTime methods are kept but not called from UI.
-  Future<void> _selectDate(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: _currentDateTime,
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2101),
-    );
-    if (picked != null && picked != _currentDateTime) {
-      setState(() {
-        _currentDateTime = DateTime(
-          picked.year,
-          picked.month,
-          picked.day,
-          _currentDateTime.hour,
-          _currentDateTime.minute,
-          _currentDateTime.second,
-        );
-      });
-    }
-  }
-
-  Future<void> _selectTime(BuildContext context) async {
-    final TimeOfDay? picked = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay.fromDateTime(_currentDateTime),
-    );
-    if (picked != null) {
-      setState(() {
-        _currentDateTime = DateTime(
-          _currentDateTime.year,
-          _currentDateTime.month,
-          _currentDateTime.day,
-          picked.hour,
-          picked.minute,
-        );
-      });
+    if (_isEditMode) {
+      await _editTransaction();
+    } else {
+      await _addTransaction();
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    String appBarTitle = widget.mode == ScreenMode.add ? 'Add' : 'Edit';
-    appBarTitle += ' Transaction';
+    final titleBase = _isEditMode ? 'Edit' : 'Add';
+    final titleType = _selectedType == _TransactionType.income ? ' (Income)' : ' (Expense)';
+    final String appBarTitle = '$titleBase Transaction$titleType';
 
-    final currentEffectiveType = widget.mode == ScreenMode.edit 
-        ? (widget.transactionToEdit!.amount >= 0 ? TransactionType.income : TransactionType.expense)
-        : widget.transactionType;
-    
-    appBarTitle += (currentEffectiveType == TransactionType.income ? ' (Income)' : ' (Expense)');
-    
-    final String buttonText = widget.mode == ScreenMode.add ? 'Add' : 'Save Changes';
+    final String buttonText = _isEditMode ? 'Save Changes' : 'Add';
     final Color iconColor = Theme.of(context).colorScheme.primary;
 
     return Scaffold(
@@ -197,22 +142,59 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
+              // Type selector (user can switch in both add & edit)
+              Center(
+                child: ToggleButtons(
+                  isSelected: [
+                    _selectedType == _TransactionType.income,
+                    _selectedType == _TransactionType.expense,
+                  ],
+                  onPressed: (index) {
+                    setState(() {
+                      _selectedType = index == 0 ? _TransactionType.income : _TransactionType.expense;
+                    });
+                  },
+                  borderRadius: BorderRadius.circular(24),
+                  constraints: const BoxConstraints(minHeight: 40, minWidth: 120),
+                  selectedColor: Colors.white,
+                  fillColor: Theme.of(context).colorScheme.primary,
+                  children: const [
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 8.0),
+                      child: Text('Income'),
+                    ),
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 8.0),
+                      child: Text('Expense'),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20.0),
+
               ListTile(
                 leading: Icon(Icons.calendar_today_outlined, color: iconColor),
-                title: Text('Date: ${DateFormat.yMd().format(_currentDateTime)}', style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w500)),
+                title: Text(
+                  'Date: ${DateFormat.yMd().format(_currentDateTime)}',
+                  style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w500),
+                ),
                 contentPadding: EdgeInsets.zero,
                 dense: true,
-                onTap: null, // Not editable
+                onTap: null, // fixed for now
               ),
               const SizedBox(height: 12.0),
               ListTile(
                 leading: Icon(Icons.access_time_outlined, color: iconColor),
-                title: Text('Time: ${DateFormat.jm().format(_currentDateTime)}', style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w500)),
+                title: Text(
+                  'Time: ${DateFormat.jm().format(_currentDateTime)}',
+                  style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w500),
+                ),
                 contentPadding: EdgeInsets.zero,
                 dense: true,
-                onTap: null, // Not editable
+                onTap: null, // fixed for now
               ),
               const SizedBox(height: 24.0),
+
               TextField(
                 controller: _notesController,
                 decoration: const InputDecoration(
@@ -223,12 +205,13 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
                 maxLines: 3,
               ),
               const SizedBox(height: 24.0),
+
               TextField(
                 controller: _amountController,
                 decoration: InputDecoration(
                   labelText: 'Amount',
                   border: const OutlineInputBorder(),
-                  prefixText: currentEffectiveType == TransactionType.income ? '+ ' : '- ',
+                  prefixText: _selectedType == _TransactionType.income ? '+ ' : '- ',
                   contentPadding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 16.0),
                 ),
                 keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: false),
@@ -237,14 +220,16 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
                 ],
               ),
               const SizedBox(height: 30.0),
-              Center(
+
+              SizedBox(
+                width: double.infinity,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    minimumSize: const Size(double.infinity, 50),
+                    minimumSize: const Size.fromHeight(50),
                     shape: const StadiumBorder(),
                     textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
-                  onPressed: onAddEditButtonPressed,
+                  onPressed: _onSavePressed,
                   child: Text(buttonText),
                 ),
               ),

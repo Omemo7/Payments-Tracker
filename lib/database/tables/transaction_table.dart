@@ -49,30 +49,46 @@ class TransactionTable {
   }
 
   static Future<Map<String, double>> getMonthlySummary(int? accountId, DateTime date) async {
-    final db = await DatabaseHelper.instance.database;
-    final monthString = date.month.toString().padLeft(2, '0');
-    final yearString = date.year.toString();
-
-    final result = await db.rawQuery('''
-      SELECT 
-        SUM(CASE WHEN amount > 0 THEN amount ELSE 0 END) as totalIncome,
-        SUM(CASE WHEN amount < 0 THEN amount ELSE 0 END) as totalExpense
-    
-      FROM $table
-      WHERE accountId = ? AND strftime('%Y', createdAt) = ? AND strftime('%m', createdAt) = ?
-    ''', [accountId, yearString, monthString]);
-
-    if (result.isNotEmpty && result.first != null) {
-      final row = result.first;
-      return {
-        'income': (row['totalIncome'] as num?)?.toDouble() ?? 0.0,
-        'expense': ((row['totalExpense'] as num?)?.toDouble() ?? 0.0).abs(), // This will be negative or zero
-      };
+    if (accountId == null) {
+      return {'income': 0.0, 'expense': 0.0, 'overallBalance': 0.0};
     }
-    return {'income': 0.0, 'expense': 0.0};
+
+    final db = await DatabaseHelper.instance.database;
+
+    // Month boundaries
+    final monthStart = DateTime(date.year, date.month, 1, 0, 0, 0);
+    final monthEnd   = DateTime(date.year, date.month + 1, 0, 23, 59, 59);
+
+    // Format compatible with SQLite datetime()
+    String fmt(DateTime dt) => DateFormat('yyyy-MM-dd HH:mm:ss').format(dt);
+
+    final rows = await db.rawQuery('''
+    SELECT
+      SUM(CASE WHEN amount > 0 AND datetime(createdAt) BETWEEN datetime(?) AND datetime(?) THEN amount ELSE 0 END) AS totalIncome,
+      SUM(CASE WHEN amount < 0 AND datetime(createdAt) BETWEEN datetime(?) AND datetime(?) THEN amount ELSE 0 END) AS totalExpense,
+      SUM(CASE WHEN datetime(createdAt) <= datetime(?) THEN amount ELSE 0 END) AS totalBalance
+    FROM $table
+    WHERE accountId = ?
+  ''', [
+      fmt(monthStart), fmt(monthEnd),   // for income
+      fmt(monthStart), fmt(monthEnd),   // for expense
+      fmt(monthEnd),                    // for overall balance up to end of month
+      accountId,
+    ]);
+
+    double income = 0.0, expense = 0.0, overall = 0.0;
+    if (rows.isNotEmpty && rows.first != null) {
+      final r = rows.first;
+      income  = (r['totalIncome']  as num?)?.toDouble() ?? 0.0;
+      expense = ((r['totalExpense'] as num?)?.toDouble() ?? 0.0).abs();
+      overall = (r['totalBalance'] as num?)?.toDouble() ?? 0.0;
+    }
+
+    return {'income': income, 'expense': expense, 'overallBalance': overall};
   }
 
-   static Future<List<Map<String, dynamic>>> getDailyNetWithCumulativeBalanceForMonth(int? accountId, DateTime date) async {
+
+  static Future<List<Map<String, dynamic>>> getDailyNetWithCumulativeBalanceForMonth(int? accountId, DateTime date) async {
     final db = await DatabaseHelper.instance.database;
     final year = date.year;
     final month = date.month;

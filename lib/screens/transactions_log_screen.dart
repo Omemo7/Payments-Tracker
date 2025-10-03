@@ -141,14 +141,16 @@ class _TransactionsLogScreenState extends State<TransactionsLogScreen> {
   }
 
   void _goToNewerDay() {
-    if (_sortedDaysWithTransactions.isEmpty) return;
-
     int currentIndex = _sortedDaysWithTransactions.indexWhere(
         (d) => d.isAtSameMomentAs(_currentDisplayedDate));
 
     if (currentIndex > 0) {
       _triggerDataLoad(_sortedDaysWithTransactions[currentIndex - 1]);
     } else if (currentIndex == -1) {
+      // Current date is not in the list of transaction days.
+      // This happens when we are on a day with no transactions.
+
+      // Find the next available transaction day that is after the current day but not after today.
       DateTime? newerDay;
       for (int i = _sortedDaysWithTransactions.length - 1; i >= 0; i--) {
         var dayInList = _sortedDaysWithTransactions[i];
@@ -157,6 +159,7 @@ class _TransactionsLogScreenState extends State<TransactionsLogScreen> {
           break;
         }
       }
+
       if (newerDay != null) {
         _triggerDataLoad(newerDay);
       } else if (_sortedDaysWithTransactions.isNotEmpty &&
@@ -164,6 +167,10 @@ class _TransactionsLogScreenState extends State<TransactionsLogScreen> {
           _sortedDaysWithTransactions.first.isAfter(_currentDisplayedDate)) {
         _triggerDataLoad(_sortedDaysWithTransactions.first);
       }
+    } else {
+      // If we are at the newest transaction day (or on a day with no transactions after the newest one),
+      // and it's not today, the "newer" action should take us to today.
+      _goToToday();
     }
   }
 
@@ -217,15 +224,17 @@ class _TransactionsLogScreenState extends State<TransactionsLogScreen> {
   }
 
   bool _canGoToNewer(bool isLoading) {
-    if (isLoading || _sortedDaysWithTransactions.isEmpty) return false;
-    if (_currentDisplayedDate.isAtSameMomentAs(_today) || _currentDisplayedDate.isAfter(_today)) return false;
+    if (isLoading) return false;
+
+    bool canGoToCurrent = !_currentDisplayedDate.isAtSameMomentAs(_today) && !_currentDisplayedDate.isAfter(_today);
+    if (canGoToCurrent) return true;
+
+    if (_sortedDaysWithTransactions.isEmpty) return false;
 
     int currentIndex = _sortedDaysWithTransactions.indexWhere(
         (d) => d.isAtSameMomentAs(_currentDisplayedDate));
-    if (currentIndex != -1) {
-      return currentIndex > 0;
-    }
-    return _sortedDaysWithTransactions.any((day) => day.isAfter(_currentDisplayedDate) && !day.isAfter(_today));
+
+    return (currentIndex != -1 && currentIndex > 0) || _sortedDaysWithTransactions.any((day) => day.isAfter(_currentDisplayedDate) && !day.isAfter(_today));
   }
 
   @override
@@ -267,9 +276,7 @@ class _TransactionsLogScreenState extends State<TransactionsLogScreen> {
                     return TransactionInfoCard(
                       transaction: transaction,
                       balance: transactionWithBalance.balance,
-                      transactionType: transaction.amount > 0
-                          ? TransactionType.income
-                          : TransactionType.expense,
+
                       todayDate: _today,
                       onEditPressed: () async {
                         final result = await Navigator.push(
@@ -277,10 +284,7 @@ class _TransactionsLogScreenState extends State<TransactionsLogScreen> {
                           MaterialPageRoute(
                             builder: (context) => AddEditTransactionScreen(
                               transactionToEdit: transaction,
-                              transactionType: transaction.amount > 0
-                                  ? TransactionType.income
-                                  : TransactionType.expense,
-                              mode: ScreenMode.edit,
+
                             ),
                           ),
                         );
