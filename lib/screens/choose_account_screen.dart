@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:file_picker/file_picker.dart'; // Uncommented file_picker import
-import 'dart:io'; // Kept for general file operations if needed elsewhere, can be removed if not used
+import 'package:file_picker/file_picker.dart';
+import 'dart:io';
 
 import 'package:payments_tracker_flutter/database/tables/account_table.dart';
 import 'package:payments_tracker_flutter/database/tables/transaction_table.dart';
@@ -21,32 +21,71 @@ class ChooseAccountScreen extends StatefulWidget {
 class _ChooseAccountScreenState extends State<ChooseAccountScreen> {
   // Store accounts with their balances
   List<Map<String, dynamic>> _accountsData = [];
+  List<Map<String, dynamic>> _filteredAccountsData = [];
+
+  final TextEditingController _searchController = TextEditingController();
   final TextEditingController _resetConfirmController = TextEditingController();
   final TextEditingController _deleteConfirmController = TextEditingController();
-
-  final TextEditingController _editAccountNameController =
-  TextEditingController();
+  final TextEditingController _editAccountNameController = TextEditingController();
   final TextEditingController _accountNameController = TextEditingController();
 
-  bool _isInitiallyLoading = true; // Corrected typo and ensures initial loading state
+  bool _isInitiallyLoading = true;
+  bool _isSortAscending = true; // 🔽 Asc first by default
 
   @override
   void initState() {
     super.initState();
     _loadAccounts();
+    _searchController.addListener(_onSearchChanged);
+  }
+
+  @override
+  void dispose() {
+    _accountNameController.dispose();
+    _editAccountNameController.dispose();
+    _resetConfirmController.dispose();
+    _deleteConfirmController.dispose();
+    _searchController.removeListener(_onSearchChanged);
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _onSearchChanged() {
+    setState(_filterAccounts);
+  }
+
+  void _filterAccounts() {
+    final query = _searchController.text.toLowerCase();
+    if (query.isEmpty) {
+      _filteredAccountsData = List.from(_accountsData);
+    } else {
+      _filteredAccountsData = _accountsData.where((accountData) {
+        final accountName = (accountData['account'] as AccountModel).name.toLowerCase();
+        return accountName.contains(query);
+      }).toList();
+    }
+    _applySort();
+  }
+
+  void _applySort() {
+    _filteredAccountsData.sort((a, b) {
+      final double balanceA = (a['balance'] as num).toDouble();
+      final double balanceB = (b['balance'] as num).toDouble();
+      return _isSortAscending ? balanceA.compareTo(balanceB) : balanceB.compareTo(balanceA);
+    });
   }
 
   Future<void> _loadAccounts() async {
     if (mounted) {
-      setState(() {
-        _isInitiallyLoading = true; // Show main loader
-      });
+      setState(() => _isInitiallyLoading = true);
     }
 
     _accountsData = await AccountTable.getAllAccountsWithBalances();
+
     if (mounted) {
       setState(() {
-        _isInitiallyLoading = false; // Hide main loader, data is ready
+        _isInitiallyLoading = false;
+        _filterAccounts(); // this also applies sorting
       });
     }
   }
@@ -57,7 +96,7 @@ class _ChooseAccountScreenState extends State<ChooseAccountScreen> {
       context,
       MaterialPageRoute(builder: (context) => const MainScreen()),
     ).then((_) {
-      _loadAccounts(); // This will now reload accounts and their balances
+      _loadAccounts();
     });
   }
 
@@ -83,9 +122,7 @@ class _ChooseAccountScreenState extends State<ChooseAccountScreen> {
           actions: <Widget>[
             TextButton(
               child: const Text('Cancel'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
+              onPressed: () => Navigator.of(context).pop(),
             ),
             TextButton(
               child: const Text('Add'),
@@ -94,8 +131,7 @@ class _ChooseAccountScreenState extends State<ChooseAccountScreen> {
                 if (name.isNotEmpty) {
                   final newAccountModel = AccountModel(name: name);
                   await AccountTable.insert(newAccountModel);
-                  // No need to pop navigator before _loadAccounts if it handles mounted check
-                  _loadAccounts(); // Reload accounts and balances
+                  _loadAccounts();
                   if (mounted) Navigator.of(context).pop();
                 }
               },
@@ -119,8 +155,7 @@ class _ChooseAccountScreenState extends State<ChooseAccountScreen> {
               children: <Widget>[
                 TextField(
                   controller: _editAccountNameController,
-                  decoration:
-                  const InputDecoration(hintText: "New Account Name"),
+                  decoration: const InputDecoration(hintText: "New Account Name"),
                   autofocus: true,
                 ),
               ],
@@ -129,25 +164,19 @@ class _ChooseAccountScreenState extends State<ChooseAccountScreen> {
           actions: <Widget>[
             TextButton(
               child: const Text('Cancel'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
+              onPressed: () => Navigator.of(context).pop(),
             ),
             TextButton(
               child: const Text('Save'),
               onPressed: () async {
                 final String newName = _editAccountNameController.text.trim();
                 if (newName.isNotEmpty && newName != account.name) {
-                  // Assuming AccountModel does not store balance directly,
-                  // or if it does, it's not managed here directly for editing.
-                  // The balance is fetched in _loadAccounts.
-                  final updatedAccount = AccountModel(
-                      id: account.id, name: newName);
+                  final updatedAccount = AccountModel(id: account.id, name: newName);
                   await AccountTable.update(updatedAccount);
-                  _loadAccounts(); // Reload accounts and balances
+                  _loadAccounts();
                   if (mounted) Navigator.of(context).pop();
                 } else {
-                  Navigator.of(context).pop(); // Pop if no change or empty
+                  Navigator.of(context).pop();
                 }
               },
             ),
@@ -159,25 +188,22 @@ class _ChooseAccountScreenState extends State<ChooseAccountScreen> {
 
   Future<void> _handleCreateBackup() async {
     try {
-      // Read the DB file into bytes
       final dbPath = await DatabaseHelper.instance.getDatabasePath();
       final dbFile = File(dbPath);
       final dbBytes = await dbFile.readAsBytes();
 
-      // Ask user where to save it (on Android/iOS this will just export the bytes)
-      String? outputFile = await FilePicker.platform.saveFile(
+      final String? outputFile = await FilePicker.platform.saveFile(
         dialogTitle: 'Save Database Backup',
-        fileName:
-        'payments_tracker_backup_${DateTime.now().toIso8601String().split('.')[0].replaceAll(':', '-')}.db',
+        fileName: 'payments_tracker_backup_${DateTime.now().toIso8601String().split('.')[0].replaceAll(':', '-')}.db',
         type: FileType.custom,
-        allowedExtensions: ['db'], // no dot needed here
-        bytes: dbBytes, // 👈 REQUIRED on Android/iOS
+        allowedExtensions: ['db'],
+        bytes: dbBytes, // required on mobile
       );
 
       if (outputFile != null) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Backup created successfully!')),
+            const SnackBar(content: Text('Backup created successfully!')),
           );
         }
       } else {
@@ -193,10 +219,10 @@ class _ChooseAccountScreenState extends State<ChooseAccountScreen> {
           SnackBar(content: Text('Error creating backup: $e')),
         );
       }
+      // ignore: avoid_print
       print('Error during backup creation: $e');
     }
   }
-
 
   Future<void> _handleRestoreBackup() async {
     final bool? confirmRestore = await showDialog<bool>(
@@ -205,15 +231,17 @@ class _ChooseAccountScreenState extends State<ChooseAccountScreen> {
         return AlertDialog(
           title: const Text('Confirm Restore'),
           content: const Text(
-              'Restoring from a backup will overwrite all current data. This action cannot be undone. Are you sure?'),
+            'Restoring from a backup will overwrite all current data. This action cannot be undone. Are you sure?',
+          ),
           actions: <Widget>[
             TextButton(
-                child: const Text('Cancel'),
-                onPressed: () => Navigator.of(context).pop(false)),
+              child: const Text('Cancel'),
+              onPressed: () => Navigator.of(context).pop(false),
+            ),
             TextButton(
-                child: const Text('Restore',
-                    style: TextStyle(color: AppColors.expenseRed)),
-                onPressed: () => Navigator.of(context).pop(true)),
+              child: const Text('Restore', style: TextStyle(color: AppColors.expenseRed)),
+              onPressed: () => Navigator.of(context).pop(true),
+            ),
           ],
         );
       },
@@ -221,31 +249,32 @@ class _ChooseAccountScreenState extends State<ChooseAccountScreen> {
 
     if (confirmRestore == true) {
       try {
-        FilePickerResult? result = await FilePicker.platform.pickFiles(
+        final FilePickerResult? result = await FilePicker.platform.pickFiles(
           type: FileType.custom,
-          allowedExtensions: ['.db', '.sqlite', '.sqlite3'],
+          // NOTE: file_picker expects extensions WITHOUT dots
+          allowedExtensions: ['db', 'sqlite', 'sqlite3'],
         );
 
         if (result != null && result.files.single.path != null) {
           final String backupPath = result.files.single.path!;
-          // Use DatabaseHelper.instance instead of _dbHelper
           final success = await DatabaseHelper.instance.restoreBackup(backupPath);
+
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                  content: Text(success
-                      ? 'Restore successful! Application will refresh data.'
-                      : 'Restore failed.')),
+                content: Text(success
+                    ? 'Restore successful! Application will refresh data.'
+                    : 'Restore failed.'),
+              ),
             );
             if (success) {
-              await _loadAccounts(); // Reload accounts and balances
+              await _loadAccounts();
             }
           }
         } else {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                  content: Text('No backup file selected or path is invalid.')),
+              const SnackBar(content: Text('No backup file selected or path is invalid.')),
             );
           }
         }
@@ -255,6 +284,7 @@ class _ChooseAccountScreenState extends State<ChooseAccountScreen> {
             SnackBar(content: Text('Error restoring backup: $e')),
           );
         }
+        // ignore: avoid_print
         print('Error during backup restoration: $e');
       }
     }
@@ -292,15 +322,13 @@ class _ChooseAccountScreenState extends State<ChooseAccountScreen> {
               actions: <Widget>[
                 TextButton(
                   child: const Text('Cancel'),
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
+                  onPressed: () => Navigator.of(context).pop(),
                 ),
                 TextButton(
                   style: TextButton.styleFrom(foregroundColor: AppColors.expenseRed),
                   onPressed: isButtonEnabled
                       ? () {
-                    Navigator.of(context).pop(); // Pop confirmation dialog
+                    Navigator.of(context).pop();
                     _performFullReset();
                   }
                       : null,
@@ -321,7 +349,7 @@ class _ChooseAccountScreenState extends State<ChooseAccountScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Database has been reset successfully!')),
         );
-        _loadAccounts(); // Refresh the account list (it should be empty)
+        _loadAccounts();
       }
     } catch (e) {
       if (mounted) {
@@ -330,15 +358,6 @@ class _ChooseAccountScreenState extends State<ChooseAccountScreen> {
         );
       }
     }
-  }
-
-  @override
-  void dispose() {
-    _accountNameController.dispose();
-    _editAccountNameController.dispose();
-    _resetConfirmController.dispose(); // Dispose reset controller
-    _deleteConfirmController.dispose();
-    super.dispose();
   }
 
   @override
@@ -358,23 +377,45 @@ class _ChooseAccountScreenState extends State<ChooseAccountScreen> {
                 _showResetConfirmationDialog();
               }
             },
-            itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-              const PopupMenuItem<String>(
+            itemBuilder: (BuildContext context) => const <PopupMenuEntry<String>>[
+              PopupMenuItem<String> (
                 value: 'create_backup',
-                child: Text('Create Backup'),
+                child: Row(
+                  children: [
+                    Icon(Icons.backup),
+                    SizedBox(width: 10),
+                    Text('Create Backup'),
+                  ],
+                ),
               ),
-              const PopupMenuItem<String>(
+              PopupMenuItem<String>(
                 value: 'restore_backup',
-                child: Text('Restore Backup'),
+                child: Row(
+                  children: [
+                    Icon(Icons.restore),
+                    SizedBox(width: 10),
+                    Text('Restore Backup'),
+                  ],
+                ),
               ),
-              const PopupMenuItem<String>(
+              PopupMenuItem<String>(
                 value: 'reset',
-                child: Text('Reset Database'),
+                child: Row(
+                  children: [
+                    Icon(Icons.delete_forever, color: AppColors.expenseRed),
+                    SizedBox(width: 10),
+                    Text(
+                      'Reset Data',
+                      style: TextStyle(color: AppColors.expenseRed),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
         ],
       ),
+
       body: _isInitiallyLoading
           ? const Center(child: CircularProgressIndicator())
           : _accountsData.isEmpty
@@ -388,103 +429,155 @@ class _ChooseAccountScreenState extends State<ChooseAccountScreen> {
           ),
         ),
       )
-          : ListView.builder(
-        itemCount: _accountsData.length,
-        itemBuilder: (context, index) {
-          final accountData = _accountsData[index];
-          final AccountModel account = accountData['account'] as AccountModel;
-          final double balance = accountData['balance'] as double;
-
-          return AccountCard(
-            account: account,
-            balance: balance, // Use pre-fetched balance
-            onTap: () => _onAccountTap(account),
-            onEditPressed: () => _showEditAccountDialog(account),
-            onDeletePressed: () async {
-              _deleteConfirmController.clear();
-              bool isDeleteButtonEnabled = false;
-
-              final bool? confirmDelete = await showDialog<bool>(
-                context: context,
-                barrierDismissible: false,
-                builder: (BuildContext context) {
-                  return StatefulBuilder( // Use StatefulBuilder to manage button state
-                    builder: (context, setStateDialog) {
-                      return AlertDialog(
-                        title: const Text('Confirm Delete'),
-                        content: SingleChildScrollView(
-                          child: ListBody(
-                            children: <Widget>[
-                              Text(
-                                  'Are you sure you want to delete account "${account.name}" with all its transactions? This action is irreversible.'),
-                              const Text('Please type "I am sure" to confirm.'),
-                              TextField(
-                                controller: _deleteConfirmController,
-                                decoration: const InputDecoration(hintText: 'I am sure'),
-                                onChanged: (text) {
-                                  setStateDialog(() {
-                                    isDeleteButtonEnabled = text == 'I am sure';
-                                  });
-                                },
-                              ),
-                            ],
-                          ),
-                        ),
-                        actions: <Widget>[
-                          TextButton(
-                              child: const Text('Cancel'),
-                              onPressed: () =>
-                                  Navigator.of(context).pop(false)),
-                          TextButton(
-                              style: TextButton.styleFrom(foregroundColor: AppColors.expenseRed),
-                              onPressed: isDeleteButtonEnabled ? () => Navigator.of(context).pop(true) : null,
-                              child: const Text('Delete')),
-                        ],
-                      );
-                    },
-                  );
-                },
-              );
-
-              if (confirmDelete == true) {
-                if (account.id == null) { // Safety check
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Cannot delete account without an ID.'),
-                        backgroundColor: AppColors.expenseRed,
+          : Column(
+        children: [
+          // 🔍 Search + ↕️ Sort Row
+          const SizedBox(height: 5),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 12, 12, 0),
+            child: Row(
+              children: [
+                // Expanded search field (no hard width)
+                Expanded(
+                  child: TextField(
+                    controller: _searchController,
+                    decoration: InputDecoration(
+                      labelText: 'Search Accounts',
+                      hintText: 'Enter account name...',
+                      prefixIcon: const Icon(Icons.search),
+                      suffixIcon: _searchController.text.isNotEmpty
+                          ? IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () {
+                          _searchController.clear();
+                          _filterAccounts();
+                        },
+                      )
+                          : null,
+                      border: const OutlineInputBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(20.0)),
                       ),
-                    );
-                  }
-                  return;
-                }
-                bool accountHasTransactions = await TransactionTable
-                    .getTransactionsCountForAccount(account.id!) > 0;
-
-                await AccountTable.delete(account.id!);
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Account ${account.name} deleted successfully.'),
-                      backgroundColor: AppColors.incomeGreen,
                     ),
-                  );
-                }
-                _loadAccounts(); // Refresh list
+                  ),
+                ),
 
-              }
-            },
-          );
-        },
+                // ↕️ Sort IconButton
+                Tooltip(
+                  message: _isSortAscending
+                      ? 'Sort by balance: ascending'
+                      : 'Sort by balance: descending',
+                  child: IconButton.filledTonal(
+                    onPressed: () {
+                      setState(() {
+                        _isSortAscending = !_isSortAscending;
+                        _applySort();
+                      });
+                    },
+                    // Use clear up/down arrows for direction
+                    icon: Icon(_isSortAscending ? Icons.south : Icons.north),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 15),
+          Expanded(
+            child: _filteredAccountsData.isEmpty && _searchController.text.isNotEmpty
+                ? const Center(
+              child: Text(
+                'No accounts match your search.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 16.0),
+              ),
+            )
+                : ListView.builder(
+              itemCount: _filteredAccountsData.length,
+              itemBuilder: (context, index) {
+                final accountData = _filteredAccountsData[index];
+                final AccountModel account = accountData['account'] as AccountModel;
+                final double balance = (accountData['balance'] as num).toDouble();
+
+                return AccountCard(
+                  account: account,
+                  balance: balance,
+                  onTap: () => _onAccountTap(account),
+                  onEditPressed: () => _showEditAccountDialog(account),
+                  onDeletePressed: () async {
+                    _deleteConfirmController.clear();
+                    bool isDeleteButtonEnabled = false;
+
+                    final bool? confirmDelete = await showDialog<bool>(
+                      context: context,
+                      barrierDismissible: false,
+                      builder: (BuildContext context) {
+                        return StatefulBuilder(
+                          builder: (context, setStateDialog) {
+                            return AlertDialog(
+                              title: const Text('Confirm Delete'),
+                              content: SingleChildScrollView(
+                                child: ListBody(
+                                  children: <Widget>[
+                                    Text(
+                                        'Are you sure you want to delete account "${account.name}" with all its transactions? This action is irreversible.'),
+                                    const Text('Please type "I am sure" to confirm.'),
+                                    TextField(
+                                      controller: _deleteConfirmController,
+                                      decoration: const InputDecoration(hintText: 'I am sure'),
+                                      onChanged: (text) {
+                                        setStateDialog(() {
+                                          isDeleteButtonEnabled = text == 'I am sure';
+                                        });
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              actions: <Widget>[
+                                TextButton(
+                                  child: const Text('Cancel'),
+                                  onPressed: () => Navigator.of(context).pop(false),
+                                ),
+                                TextButton(
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: AppColors.expenseRed,
+                                  ),
+                                  onPressed: isDeleteButtonEnabled
+                                      ? () => Navigator.of(context).pop(true)
+                                      : null,
+                                  child: const Text('Delete'),
+                                ),
+                              ],
+                            );
+                          },
+                        );
+                      },
+                    );
+
+                    if (confirmDelete == true) {
+                      if (account.id == null) {
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Cannot delete account without an ID.'),
+                              backgroundColor: AppColors.expenseRed,
+                            ),
+                          );
+                        }
+                        return;
+                      }
+                      await AccountTable.delete(account.id!);
+                      _loadAccounts();
+                    }
+                  },
+                );
+              },
+            ),
+          ),
+        ],
       ),
-      floatingActionButton: SizedBox(
-        width: 70.0, // Increased width
-        height: 70.0, // Increased height
-        child: FloatingActionButton(
-          onPressed: _showAddAccountDialog,
-          child: const Icon(Icons.add, size: 30.0), // Optionally increase icon size
-          tooltip: 'Add New Account',
-        ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _showAddAccountDialog,
+        child: const Icon(Icons.add),
       ),
     );
   }
