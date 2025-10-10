@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:payments_tracker_flutter/models/account_model.dart'; // Assuming AccountModel has 'name' and 'balance'
 import 'package:payments_tracker_flutter/global_variables/app_colors.dart';
 import 'package:payments_tracker_flutter/widgets/basic/basic_card.dart';
+
+import '../global_variables/numbers_format.dart';
 
 class AccountCard extends StatelessWidget {
   final AccountModel account;
@@ -57,7 +60,7 @@ class AccountCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Balance: ${balance.toStringAsFixed(2)}',
+                    'Balance: ${NumberFormat(NumbersFormat().format).format(balance)}',
                     style: TextStyle(
                       fontSize: 11,
                       color: balance >= 0

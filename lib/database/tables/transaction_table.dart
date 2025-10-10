@@ -48,7 +48,7 @@ class TransactionTable {
     return result.map((row) => TransactionModel.fromMap(row)).toList();
   }
 
-  static Future<Map<String, double>> getMonthlySummary(int? accountId, DateTime date) async {
+  static Future<Map<String, double>> getMonthlySummary(DateTime date,int? accountId) async {
     if (accountId == null) {
       return {'income': 0.0, 'expense': 0.0, 'overallBalance': 0.0};
     }
@@ -72,7 +72,7 @@ class TransactionTable {
   ''', [
       fmt(monthStart), fmt(monthEnd),   // for income
       fmt(monthStart), fmt(monthEnd),   // for expense
-      fmt(monthEnd),                    // for overall balance up to end of month
+      fmt(monthEnd),
       accountId,
     ]);
 

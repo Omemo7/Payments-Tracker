@@ -103,7 +103,7 @@ class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
 
     final List<Map<String, dynamic>> chartDataForeachDayOfSelectedMonth = await TransactionTable.getDailyNetWithCumulativeBalanceForMonth(ChosenAccount().account?.id, selectedMonthDate);
 
-    final Map<String, double> monthlySummary = await TransactionTable.getMonthlySummary(ChosenAccount().account?.id, selectedMonthDate);
+    final Map<String, double> monthlySummary = await TransactionTable.getMonthlySummary(selectedMonthDate,ChosenAccount().account?.id );
 
     setState(() {
       _selectedMonthChartData = chartDataForeachDayOfSelectedMonth;
@@ -143,7 +143,7 @@ class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
         _currentMonthIndex = -1; // Indicates no month is selected
       });
       // Manually calculate summary for the current month since it's not in our list.
-      final Map<String, double> monthlySummary = await TransactionTable.getMonthlySummary(ChosenAccount().account?.id, now);
+      final Map<String, double> monthlySummary = await TransactionTable.getMonthlySummary(now,ChosenAccount().account?.id );
       setState(() {
         _selectedMonthChartData = []; // No transactions this month
         _selectedMonthIncome = monthlySummary['income'] ?? 0.0;

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:payments_tracker_flutter/global_variables/numbers_format.dart';
 import '../global_variables/app_colors.dart';
 import 'basic/basic_card.dart';
 
@@ -93,13 +94,12 @@ class MonthlyOrDailyDetailsCard extends StatelessWidget {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    'Overall Balance (End of ${isMonthly ? 'Month' : 'Day'})',
+                    'Overall Balance:',
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                       color: AppColors.purple,
                     ),
-                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
@@ -108,7 +108,7 @@ class MonthlyOrDailyDetailsCard extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(left: 32.0),
               child: Text(
-                overallBalanceEndOfMonthOrDay.toStringAsFixed(2),
+                NumberFormat(NumbersFormat().format).format(overallBalanceEndOfMonthOrDay),
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -146,7 +146,7 @@ class MonthlyOrDailyDetailsCard extends StatelessWidget {
           ),
         ),
         Text(
-          value.toStringAsFixed(2),
+          NumberFormat(NumbersFormat().format).format(value),
           style: TextStyle(
             fontSize: 16,
             fontWeight: isBold ? FontWeight.w700 : FontWeight.w600,

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:payments_tracker_flutter/screens/main_screen.dart';
+import 'package:payments_tracker_flutter/screens/account_main_screen.dart';
 import 'database/database_helper.dart';
 import 'package:payments_tracker_flutter/screens/choose_account_screen.dart';
 import 'package:payments_tracker_flutter/global_variables/app_colors.dart';

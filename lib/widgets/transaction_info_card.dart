@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../global_variables/numbers_format.dart';
 import '../screens/add_edit_transaction_screen.dart'; // TransactionType
 import '../models/transaction_model.dart';
 import '../global_variables/app_colors.dart';
@@ -79,43 +80,48 @@ class TransactionInfoCard extends StatelessWidget {
               _NotesBox(note: transaction.note!.trim()),
             ],
 
-            const SizedBox(height: 10),
-            const Divider(height: 1),
+
+
 
             Padding(
-              padding: const EdgeInsets.only(top: 8),
+              padding: const EdgeInsets.only(top: 2),
               child: Row(
-
                 children: [
-                  // Amount text
-                  Text(
-                    'Amount: $amountPrefix${transaction.amount.toStringAsFixed(2)}',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: amountColor,
+                  // 💰 Amount text with tooltip and better spacing
+                  Expanded(
+                    flex: 2, // gives more horizontal space to the amount text
+                    child: Tooltip(
+                      message:
+                      'Amount: $amountPrefix${NumberFormat(NumbersFormat().format).format(transaction.amount)}',
+                      child: Text(
+                        'Amount: $amountPrefix${NumberFormat(NumbersFormat().format).format(transaction.amount)}',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: amountColor,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        softWrap: false,
+                      ),
                     ),
                   ),
 
-                  const Spacer(),
-                  // Action buttons
-                  Expanded(child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.edit, size: 22),
-                        color: AppColors.purple,
-                        tooltip: 'Edit',
-                        onPressed: onEditPressed,
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.delete, size: 22),
-                        color: AppColors.expenseRed,
-                        tooltip: 'Delete',
-                        onPressed: onDeletePressed,
-                      ),
-                    ],
-                  )),
+                  // ⬅️ Replace Spacer with small gap to give more room to the amount
+                  const SizedBox(width: 8),
+
+                  // ✏️ Action buttons
+                  IconButton(
+                    icon: const Icon(Icons.edit, size: 24),
+                    color: AppColors.purple,
+                    tooltip: 'Edit',
+                    onPressed: onEditPressed,
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete, size: 24),
+                    color: AppColors.expenseRed,
+                    tooltip: 'Delete',
+                    onPressed: onDeletePressed,
+                  ),
                 ],
               ),
             )
@@ -190,7 +196,7 @@ class _BalancePill extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           Text(
-            'Balance: ${balance.toStringAsFixed(2)}',
+            'Balance: ${NumberFormat(NumbersFormat().format).format(balance)}',
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w600,

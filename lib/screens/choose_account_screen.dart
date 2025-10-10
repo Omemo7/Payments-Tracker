@@ -7,7 +7,7 @@ import 'package:payments_tracker_flutter/database/tables/transaction_table.dart'
 import 'package:payments_tracker_flutter/global_variables/chosen_account.dart';
 import 'package:payments_tracker_flutter/models/account_model.dart';
 import 'package:payments_tracker_flutter/widgets/account_card.dart';
-import 'package:payments_tracker_flutter/screens/main_screen.dart';
+import 'package:payments_tracker_flutter/screens/account_main_screen.dart';
 import 'package:payments_tracker_flutter/database/database_helper.dart';
 import 'package:payments_tracker_flutter/global_variables/app_colors.dart';
 
@@ -94,7 +94,7 @@ class _ChooseAccountScreenState extends State<ChooseAccountScreen> {
     ChosenAccount().account = account;
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => const MainScreen()),
+      MaterialPageRoute(builder: (context) => const AccountMainScreen()),
     ).then((_) {
       _loadAccounts();
     });
