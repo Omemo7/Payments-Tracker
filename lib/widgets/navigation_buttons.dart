@@ -30,7 +30,7 @@ class NavigationButtons extends StatelessWidget {
     return Container(
       color: Colors.transparent, // Keeps the background transparent
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(12.0, 4.0, 12.0, 40.0), // Padding for the button row
+        padding: const EdgeInsets.fromLTRB(4.0, 4.0, 4.0, 4.0), // Padding for the button row
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [

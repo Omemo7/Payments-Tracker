@@ -5,6 +5,7 @@ import 'package:payments_tracker_flutter/models/transaction_model.dart';
 import 'package:payments_tracker_flutter/global_variables/app_colors.dart';
 import 'package:payments_tracker_flutter/widgets/monthly_or_daily_details_card.dart';
 
+import '../widgets/basic/safe_scaffold.dart';
 import '../widgets/transaction_list_tile_card.dart';
 
 
@@ -118,7 +119,7 @@ class _DailyDetailsScreenState extends State<DailyDetailsScreen> {
   Widget build(BuildContext context) {
     final String formattedDate = DateFormat('EEEE, MMMM d, yyyy').format(widget.selectedDate);
 
-    return Scaffold(
+    return SafeScaffold(
       backgroundColor: _pageBackgroundColor,
       appBar: AppBar(
         title: Text(

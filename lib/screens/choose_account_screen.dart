@@ -11,6 +11,8 @@ import 'package:payments_tracker_flutter/screens/account_main_screen.dart';
 import 'package:payments_tracker_flutter/database/database_helper.dart';
 import 'package:payments_tracker_flutter/global_variables/app_colors.dart';
 
+import '../widgets/basic/safe_scaffold.dart';
+
 class ChooseAccountScreen extends StatefulWidget {
   const ChooseAccountScreen({Key? key}) : super(key: key);
 
@@ -362,7 +364,7 @@ class _ChooseAccountScreenState extends State<ChooseAccountScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return SafeScaffold(
       appBar: AppBar(
         title: const Text('Choose Account'),
         centerTitle: true,

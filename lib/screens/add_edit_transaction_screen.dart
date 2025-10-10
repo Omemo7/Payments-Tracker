@@ -5,6 +5,7 @@ import 'package:payments_tracker_flutter/global_variables/chosen_account.dart';
 import 'package:payments_tracker_flutter/models/transaction_model.dart';
 
 import '../database/tables/transaction_table.dart';
+import '../widgets/basic/safe_scaffold.dart';
 
 enum _TransactionType { income, expense } // internal only
 
@@ -131,7 +132,7 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
     final String buttonText = _isEditMode ? 'Save Changes' : 'Add';
     final Color iconColor = Theme.of(context).colorScheme.primary;
 
-    return Scaffold(
+    return SafeScaffold(
       appBar: AppBar(
         title: Text(appBarTitle),
         centerTitle: true,

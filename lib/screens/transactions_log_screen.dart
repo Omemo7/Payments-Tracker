@@ -8,7 +8,9 @@ import 'package:payments_tracker_flutter/screens/add_edit_transaction_screen.dar
 import 'package:payments_tracker_flutter/models/transaction_model.dart';
 import 'package:payments_tracker_flutter/database/tables/transaction_table.dart';
 import 'package:payments_tracker_flutter/models/account_model.dart'; // Import AccountModel
-import 'package:payments_tracker_flutter/database/tables/account_table.dart'; // Import AccountTable
+import 'package:payments_tracker_flutter/database/tables/account_table.dart';
+
+import '../widgets/basic/safe_scaffold.dart'; // Import AccountTable
 
 class _TransactionWithBalance {
   final TransactionModel transaction;
@@ -241,7 +243,7 @@ class _TransactionsLogScreenState extends State<TransactionsLogScreen> {
   Widget build(BuildContext context) {
     String formattedDate = DateFormat('EEE, MMM d, yyyy').format(_currentDisplayedDate);
 
-    return Scaffold(
+    return SafeScaffold(
       appBar: AppBar(
         title: Text(formattedDate),
         centerTitle: true,

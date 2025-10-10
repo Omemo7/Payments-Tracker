@@ -8,6 +8,7 @@ import 'package:payments_tracker_flutter/widgets/daily_summary_card.dart';
 import 'package:payments_tracker_flutter/screens/daily_details_screen.dart';
 import 'package:payments_tracker_flutter/global_variables/app_colors.dart';
 
+import '../widgets/basic/safe_scaffold.dart';
 import '../widgets/monthly_or_daily_details_card.dart';
 // import 'add_edit_transaction_screen.dart' show TransactionType; // Assuming not needed for this change
 
@@ -644,7 +645,7 @@ class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return SafeScaffold(
       appBar: AppBar(
         title: const Text('Monthly Summary'),
         centerTitle: true,

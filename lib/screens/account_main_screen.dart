@@ -4,6 +4,7 @@ import 'package:payments_tracker_flutter/global_variables/chosen_account.dart';
 import 'package:payments_tracker_flutter/widgets/monthly_or_daily_details_card.dart';
 
 import '../global_variables/numbers_format.dart';
+import '../widgets/basic/safe_scaffold.dart';
 import 'add_edit_transaction_screen.dart';
 import 'transactions_log_screen.dart';
 import 'monthly_summary_screen.dart';
@@ -14,7 +15,7 @@ class DetailsScreen extends StatelessWidget {
   const DetailsScreen({super.key});
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return SafeScaffold(
       appBar: AppBar(title: const Text('Details')),
       body: const Center(child: Text('Details Screen')),
     );
