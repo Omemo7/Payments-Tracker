@@ -436,9 +436,19 @@ class _ChooseAccountScreenState extends State<ChooseAccountScreen> {
           // 🔍 Search + ↕️ Sort Row
           const SizedBox(height: 5),
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 12, 12, 0),
+            padding: const EdgeInsets.fromLTRB(15, 10, 15, 0),
             child: Row(
               children: [
+
+                  Tooltip(
+                    message: 'Add New Account',
+                    child: IconButton(
+
+                      onPressed: _showAddAccountDialog,
+                      icon: const Icon(Icons.add),
+                    ),
+                  ),
+
                 // Expanded search field (no hard width)
                 Expanded(
                   child: TextField(
@@ -479,6 +489,9 @@ class _ChooseAccountScreenState extends State<ChooseAccountScreen> {
                     icon: Icon(_isSortAscending ? Icons.south : Icons.north),
                   ),
                 ),
+
+
+
               ],
             ),
           ),
@@ -576,10 +589,6 @@ class _ChooseAccountScreenState extends State<ChooseAccountScreen> {
             ),
           ),
         ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showAddAccountDialog,
-        child: const Icon(Icons.add),
       ),
     );
   }

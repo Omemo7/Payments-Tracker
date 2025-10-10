@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../global_variables/numbers_format.dart';
+import 'package:payments_tracker_flutter/widgets/utility.dart';
 import '../screens/add_edit_transaction_screen.dart'; // TransactionType
 import '../models/transaction_model.dart';
 import '../global_variables/app_colors.dart';
@@ -87,24 +87,10 @@ class TransactionInfoCard extends StatelessWidget {
               padding: const EdgeInsets.only(top: 2),
               child: Row(
                 children: [
-                  // 💰 Amount text with tooltip and better spacing
-                  Expanded(
-                    flex: 2, // gives more horizontal space to the amount text
-                    child: Tooltip(
-                      message:
-                      'Amount: $amountPrefix${NumberFormat(NumbersFormat().format).format(transaction.amount)}',
-                      child: Text(
-                        'Amount: $amountPrefix${NumberFormat(NumbersFormat().format).format(transaction.amount)}',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                          color: amountColor,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                        softWrap: false,
-                      ),
-                    ),
+                  Expanded(child:Utility.handleNumberAppearanceForOverflow(number: transaction.amount,
+                      color: amountColor, fontSize: 18 ,fontWeight:FontWeight.w500,preText:"Amount:" ),
                   ),
+
 
                   // ⬅️ Replace Spacer with small gap to give more room to the amount
                   const SizedBox(width: 8),
@@ -195,14 +181,9 @@ class _BalancePill extends StatelessWidget {
             size: 18,
           ),
           const SizedBox(width: 8),
-          Text(
-            'Balance: ${NumberFormat(NumbersFormat().format).format(balance)}',
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: textColor,
-            ),
-          ),
+          Utility.handleNumberAppearanceForOverflow(number: balance,
+              color: textColor, fontSize: 15,fontWeight: FontWeight.w600)
+
         ],
       ),
     );

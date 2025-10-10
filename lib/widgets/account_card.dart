@@ -3,8 +3,8 @@ import 'package:intl/intl.dart';
 import 'package:payments_tracker_flutter/models/account_model.dart'; // Assuming AccountModel has 'name' and 'balance'
 import 'package:payments_tracker_flutter/global_variables/app_colors.dart';
 import 'package:payments_tracker_flutter/widgets/basic/basic_card.dart';
+import 'package:payments_tracker_flutter/widgets/utility.dart';
 
-import '../global_variables/numbers_format.dart';
 
 class AccountCard extends StatelessWidget {
   final AccountModel account;
@@ -59,15 +59,13 @@ class AccountCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 8),
-                  Text(
-                    'Balance: ${NumberFormat(NumbersFormat().format).format(balance)}',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: balance >= 0
-                          ? AppColors.greyishGreen
-                          : AppColors.greyishRed,
-                    ),
-                  ),
+
+                  Utility.handleNumberAppearanceForOverflow(number: balance,
+                      color:balance >= 0
+                      ? AppColors.greyishGreen
+                      : AppColors.greyishRed
+                      , fontSize: 11),
+
                 ],
               ),
             ),

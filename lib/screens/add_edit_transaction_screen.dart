@@ -7,6 +7,52 @@ import 'package:payments_tracker_flutter/models/transaction_model.dart';
 import '../database/tables/transaction_table.dart';
 import '../widgets/basic/safe_scaffold.dart';
 
+class ThousandsSeparatorInputFormatter extends TextInputFormatter {
+  static const separator = ',';
+
+  @override
+  TextEditingValue formatEditUpdate(
+      TextEditingValue oldValue, TextEditingValue newValue) {
+    // If the new value is empty, just return it
+    if (newValue.text.isEmpty) {
+      return newValue.copyWith(text: '');
+    }
+
+    // Get the clean number string without separators and with a single decimal point
+    String newText = newValue.text.replaceAll(separator, '');
+    if (!RegExp(r'^\d*\.?\d{0,2}$').hasMatch(newText)) {
+      return oldValue;
+    }
+
+    String beforeDecimal = newText;
+    String? afterDecimal;
+
+    if (newText.contains('.')) {
+      final parts = newText.split('.');
+      beforeDecimal = parts[0];
+      afterDecimal = parts.length > 1 ? parts[1] : null;
+    }
+
+    // Add thousands separators to the integer part
+    beforeDecimal = beforeDecimal.replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (Match m) => '${m[1]}$separator',
+    );
+
+    String formattedText = beforeDecimal;
+    if (newText.contains('.')) {
+      formattedText += '.';
+      if (afterDecimal != null) {
+        formattedText += afterDecimal;
+      }
+    }
+
+    return newValue.copyWith(
+        text: formattedText,
+        selection: TextSelection.collapsed(offset: formattedText.length));
+  }
+}
+
 enum _TransactionType { income, expense } // internal only
 
 class AddEditTransactionScreen extends StatefulWidget {
@@ -35,12 +81,13 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
     if (_isEditMode) {
       final txn = widget.transactionToEdit!;
       _notesController.text = txn.note ?? '';
-      _amountController.text = txn.amount.abs().toStringAsFixed(2);
+      _amountController.text =
+          NumberFormat('#,##0.00').format(txn.amount.abs());
       _currentDateTime = txn.createdAt;
       _selectedType = txn.amount >= 0 ? _TransactionType.income : _TransactionType.expense;
     } else {
       _currentDateTime = DateTime.now();
-      _selectedType = _TransactionType.income; // default for Add, user can change
+      _selectedType = _TransactionType.expense; 
     }
   }
 
@@ -52,7 +99,7 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
   }
 
   Future<void> _addTransaction() async {
-    final double unsignedAmount = double.parse(_amountController.text);
+    final double unsignedAmount = double.parse(_amountController.text.replaceAll(',', ''));
 
     final txn = TransactionModel(
       amount: _selectedType == _TransactionType.income ? unsignedAmount : -unsignedAmount,
@@ -76,7 +123,7 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
   }
 
   Future<void> _editTransaction() async {
-    final double unsignedAmount = double.parse(_amountController.text);
+    final double unsignedAmount = double.parse(_amountController.text.replaceAll(',', ''));
 
     final updated = TransactionModel(
       id: widget.transactionToEdit!.id,
@@ -108,7 +155,7 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
       return;
     }
     try {
-      double.parse(_amountController.text);
+      double.parse(_amountController.text.replaceAll(',', ''));
     } catch (_) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Invalid amount format')),
@@ -147,12 +194,13 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
               Center(
                 child: ToggleButtons(
                   isSelected: [
-                    _selectedType == _TransactionType.income,
+
                     _selectedType == _TransactionType.expense,
+                    _selectedType == _TransactionType.income,
                   ],
                   onPressed: (index) {
                     setState(() {
-                      _selectedType = index == 0 ? _TransactionType.income : _TransactionType.expense;
+                      _selectedType = index == 0 ? _TransactionType.expense : _TransactionType.income;
                     });
                   },
                   borderRadius: BorderRadius.circular(24),
@@ -162,50 +210,44 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
                   children: const [
                     Padding(
                       padding: EdgeInsets.symmetric(horizontal: 8.0),
-                      child: Text('Income'),
+                      child: Text('Expense'),
                     ),
                     Padding(
                       padding: EdgeInsets.symmetric(horizontal: 8.0),
-                      child: Text('Expense'),
+                      child: Text('Income'),
                     ),
                   ],
                 ),
               ),
+              const SizedBox(height: 40.0),
+
+              Row(
+                children: [
+                  const SizedBox(width: 12),
+                  Icon(Icons.calendar_today_outlined, color: iconColor),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Date: ${DateFormat.yMd().format(_currentDateTime)}',
+                    style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w500),
+                  ),
+                ],
+
+                ),
               const SizedBox(height: 20.0),
+              Row(
+                children: [
+                  const SizedBox(width: 12),
+                  Icon(Icons.access_time_outlined, color: iconColor),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Time: ${DateFormat.jm().format(_currentDateTime)}',
+                    style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w500),
+                  ),
+                ],
 
-              ListTile(
-                leading: Icon(Icons.calendar_today_outlined, color: iconColor),
-                title: Text(
-                  'Date: ${DateFormat.yMd().format(_currentDateTime)}',
-                  style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w500),
-                ),
-                contentPadding: EdgeInsets.zero,
-                dense: true,
-                onTap: null, // fixed for now
               ),
-              const SizedBox(height: 12.0),
-              ListTile(
-                leading: Icon(Icons.access_time_outlined, color: iconColor),
-                title: Text(
-                  'Time: ${DateFormat.jm().format(_currentDateTime)}',
-                  style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w500),
-                ),
-                contentPadding: EdgeInsets.zero,
-                dense: true,
-                onTap: null, // fixed for now
-              ),
-              const SizedBox(height: 24.0),
 
-              TextField(
-                controller: _notesController,
-                decoration: const InputDecoration(
-                  labelText: 'Notes (Optional)',
-                  border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(horizontal: 12.0, vertical: 16.0),
-                ),
-                maxLines: 3,
-              ),
-              const SizedBox(height: 24.0),
+              const SizedBox(height: 40.0),
 
               TextField(
                 controller: _amountController,
@@ -217,9 +259,20 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
                 ),
                 keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: false),
                 inputFormatters: <TextInputFormatter>[
-                  FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
+                  ThousandsSeparatorInputFormatter(),
                 ],
               ),
+              const SizedBox(height: 24.0),
+              TextField(
+                controller: _notesController,
+                decoration: const InputDecoration(
+                  labelText: 'Notes (Optional)',
+                  border: OutlineInputBorder(),
+                  contentPadding: EdgeInsets.symmetric(horizontal: 12.0, vertical: 16.0),
+                ),
+                maxLines: 3,
+              ),
+
               const SizedBox(height: 30.0),
 
               SizedBox(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:payments_tracker_flutter/widgets/basic/basic_card.dart';
+import 'package:payments_tracker_flutter/widgets/utility.dart';
 import '../global_variables/app_colors.dart';
 import '../global_variables/chosen_account.dart';
 import '../screens/daily_details_screen.dart';
@@ -114,16 +115,13 @@ class DailySummaryCard extends StatelessWidget {
                             : AppColors.greyishRed,
                       ),
                       const SizedBox(width: 8),
-                      Text(
-                        'Net: ${dailyNet.toStringAsFixed(2)}',
-                        style: TextStyle(
-                          fontSize: 14.5,
-                          fontWeight: FontWeight.w600,
+                      Expanded(child: Utility.handleNumberAppearanceForOverflow(number: dailyNet,
                           color: dailyNet >= 0
                               ? AppColors.greyishGreen
                               : AppColors.greyishRed,
-                        ),
-                      ),
+                          fontSize: 14.5, fontWeight: FontWeight.w600))
+
+
                     ],
                   ),
                 ),
@@ -140,6 +138,7 @@ class DailySummaryCard extends StatelessWidget {
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
+
                     children: [
                       Icon(
                         cumulativeBalance >= 0
@@ -151,16 +150,13 @@ class DailySummaryCard extends StatelessWidget {
                             : AppColors.greyishRed,
                       ),
                       const SizedBox(width: 8),
-                      Text(
-                        'Balance: ${cumulativeBalance.toStringAsFixed(2)}',
-                        style: TextStyle(
-                          fontSize: 14.5,
-                          fontWeight: FontWeight.w600,
+                      Expanded(child: Utility.handleNumberAppearanceForOverflow(number: cumulativeBalance,
                           color: cumulativeBalance >= 0
                               ? AppColors.greyishGreen
                               : AppColors.greyishRed,
-                        ),
-                      ),
+                          fontSize: 14.5, fontWeight: FontWeight.w600))
+
+
                     ],
                   ),
                 ),

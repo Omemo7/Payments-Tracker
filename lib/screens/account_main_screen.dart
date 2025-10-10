@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:payments_tracker_flutter/global_variables/chosen_account.dart';
 import 'package:payments_tracker_flutter/widgets/monthly_or_daily_details_card.dart';
+import 'package:payments_tracker_flutter/widgets/utility.dart';
 
-import '../global_variables/numbers_format.dart';
+
 import '../widgets/basic/safe_scaffold.dart';
 import 'add_edit_transaction_screen.dart';
 import 'transactions_log_screen.dart';
@@ -22,16 +23,8 @@ class DetailsScreen extends StatelessWidget {
   }
 }
 
-class AddScreen extends StatelessWidget {
-  const AddScreen({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text('Add Operation')),
-      body: Center(child: Text('Add Screen')),
-    );
-  }
-}
+
+
 
 class AccountMainScreen extends StatefulWidget {
   const AccountMainScreen({super.key});
@@ -69,7 +62,7 @@ class _AccountMainScreenState extends State<AccountMainScreen> {
   @override
   Widget build(BuildContext context) {
     final accountName = ChosenAccount().account?.name ?? 'Account';
-    return Scaffold(
+    return SafeScaffold(
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -108,32 +101,36 @@ class _AccountMainScreenState extends State<AccountMainScreen> {
                         ? AppColors.incomeGreen
                         : AppColors.expenseRed;
 
-                    return SizedBox(
-                      height: 56,
-                      child: AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 180),
-                        child: Row(
-                          key: ValueKey<double>(balance),
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.account_balance_wallet_outlined,
-                              color: color,
-                              size: 36,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              NumberFormat(NumbersFormat().format).format(balance),
-                              style: TextStyle(
-                                fontSize: 36,
-                                fontWeight: FontWeight.w600,
-                                color: color,
+
+
+
+                    return Expanded(
+                      child: Row(
+                        key: ValueKey<double>(balance),
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Row( // inner row is only as wide as needed
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.account_balance_wallet_outlined, color: color, size: 36),
+                              const SizedBox(width: 8),
+                              ConstrainedBox(
+                                constraints: const BoxConstraints(maxWidth: 220), // cap width if needed
+                                child: Utility.handleNumberAppearanceForOverflow(
+                                  number: balance,
+                                  color: color,
+                                  fontSize: 36,
+                                  fontWeight: FontWeight.w600,
+                                  textAlign: TextAlign.left, // <-- important
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
+                            ],
+                          ),
+                        ],
                       ),
                     );
+
+
                   },
                 ),
               ),

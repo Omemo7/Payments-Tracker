@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:payments_tracker_flutter/global_variables/numbers_format.dart';
+import 'package:payments_tracker_flutter/widgets/utility.dart';
+
 import '../global_variables/app_colors.dart';
 import 'basic/basic_card.dart';
 
@@ -87,37 +88,33 @@ class MonthlyOrDailyDetailsCard extends StatelessWidget {
             Divider(color: AppColors.subtlePurple.withOpacity(0.2), thickness: 1),
             const SizedBox(height: 16),
 
-            // Overall Balance
-            Row(
-              children: [
-                const Icon(Icons.account_balance_wallet, color: AppColors.purple, size: 22),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    'Overall Balance:',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.purple,
-                    ),
+          Row(
+            children: [
+              const Icon(Icons.account_balance_wallet, color: AppColors.purple, size: 22),
+              const SizedBox(width: 5),
+              Expanded(
+                child: Text(
+                  'Overall Balance:',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight:  FontWeight.w700,
+                    color: AppColors.purple,
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            Padding(
-              padding: const EdgeInsets.only(left: 32.0),
-              child: Text(
-                NumberFormat(NumbersFormat().format).format(overallBalanceEndOfMonthOrDay),
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+              ),
+
+              Expanded(child: Utility.handleNumberAppearanceForOverflow(number: overallBalanceEndOfMonthOrDay,
                   color: overallBalanceEndOfMonthOrDay >= 0
                       ? AppColors.incomeGreen
-                      : AppColors.expenseRed,
-                ),
-              ),
-            ),
+                      : AppColors.expenseRed
+                  , fontSize: 18,
+                  fontWeight: FontWeight.bold, textAlign: TextAlign.center))
+
+
+            ],
+          ),
+            // Overall Balance
+
           ],
         ),
       ),
@@ -145,14 +142,12 @@ class MonthlyOrDailyDetailsCard extends StatelessWidget {
             ),
           ),
         ),
-        Text(
-          NumberFormat(NumbersFormat().format).format(value),
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: isBold ? FontWeight.w700 : FontWeight.w600,
-            color: color,
-          ),
-        ),
+        Expanded(child:Utility.handleNumberAppearanceForOverflow(number: value,
+            color: color, fontSize: 16
+            ,fontWeight: isBold ? FontWeight.w700 : FontWeight.w600
+            , textAlign: TextAlign.right))
+
+
       ],
     );
   }
