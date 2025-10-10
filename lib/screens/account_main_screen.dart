@@ -12,16 +12,7 @@ import 'monthly_summary_screen.dart';
 import '../database/tables/transaction_table.dart';
 import '../global_variables/app_colors.dart';
 
-class DetailsScreen extends StatelessWidget {
-  const DetailsScreen({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return SafeScaffold(
-      appBar: AppBar(title: const Text('Details')),
-      body: const Center(child: Text('Details Screen')),
-    );
-  }
-}
+
 
 
 
@@ -73,77 +64,65 @@ class _AccountMainScreenState extends State<AccountMainScreen> {
       ),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(14.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.start,
             children: <Widget>[
+              // ===== Top balance (FutureBuilder wrapped with Expanded) =====
+              Flexible(
+                fit: FlexFit.loose,
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 4.0, bottom: 8.0),
+                  child: FutureBuilder<Map<String, double>>(
+                    future: _monthlySummaryFuture,
+                    builder: (context, snapshot) {
+                      final hasLive = snapshot.hasData;
+                      final data = hasLive ? snapshot.data! : (_lastSummary ?? {});
 
+                      if (!hasLive && _lastSummary == null) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
 
-              // ===== Top balance (uses cached data to prevent flicker) =====
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: FutureBuilder<Map<String, double>>(
-                  future: _monthlySummaryFuture,
-                  builder: (context, snapshot) {
-                    final hasLive = snapshot.hasData;
-                    final data = hasLive ? snapshot.data! : (_lastSummary ?? {});
+                      final balance = (data['overallBalance'] ?? 0.0);
+                      final color =
+                      balance >= 0 ? AppColors.incomeGreen : AppColors.expenseRed;
 
-                    if (!hasLive && _lastSummary == null) {
-                      // first-ever load: keep height stable
-                      return const SizedBox(
-                        height: 56, // match final row height
-                        child: Center(child: CircularProgressIndicator()),
-                      );
-                    }
-
-                    final balance = (data['overallBalance'] ?? 0.0);
-                    final color = balance >= 0
-                        ? AppColors.incomeGreen
-                        : AppColors.expenseRed;
-
-
-
-
-                    return Expanded(
-                      child: Row(
-                        key: ValueKey<double>(balance),
-                        mainAxisAlignment: MainAxisAlignment.center,
+                      return Column(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Row( // inner row is only as wide as needed
-                            mainAxisSize: MainAxisSize.min,
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.account_balance_wallet_outlined, color: color, size: 36),
+                              Icon(Icons.account_balance_wallet_outlined,
+                                  color: color, size: 34),
                               const SizedBox(width: 8),
                               ConstrainedBox(
-                                constraints: const BoxConstraints(maxWidth: 220), // cap width if needed
+                                constraints: const BoxConstraints(maxWidth: 220),
                                 child: Utility.handleNumberAppearanceForOverflow(
                                   number: balance,
                                   color: color,
-                                  fontSize: 36,
+                                  fontSize: 34,
                                   fontWeight: FontWeight.w600,
-                                  textAlign: TextAlign.left, // <-- important
+                                  textAlign: TextAlign.left,
                                 ),
                               ),
                             ],
                           ),
                         ],
-                      ),
-                    );
-
-
-                  },
+                      );
+                    },
+                  ),
                 ),
               ),
-
-              const SizedBox(height: 10),
+              const SizedBox(height: 30),
 
               // ===== Actions =====
               ElevatedButton.icon(
                 icon: const Icon(Icons.list_alt_outlined),
                 label: const Text('Transactions Log'),
                 style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                      vertical: 15.0, horizontal: 24.0),
+                  padding:
+                  const EdgeInsets.symmetric(vertical: 15.0, horizontal: 24.0),
                   shape: const StadiumBorder(),
                   minimumSize: const Size(275, 60),
                   backgroundColor: Colors.white,
@@ -168,8 +147,8 @@ class _AccountMainScreenState extends State<AccountMainScreen> {
                 icon: const Icon(Icons.calendar_month),
                 label: const Text('Monthly Summary'),
                 style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                      vertical: 15.0, horizontal: 24.0),
+                  padding:
+                  const EdgeInsets.symmetric(vertical: 15.0, horizontal: 24.0),
                   shape: const StadiumBorder(),
                   minimumSize: const Size(275, 60),
                   backgroundColor: Colors.white,
@@ -194,8 +173,8 @@ class _AccountMainScreenState extends State<AccountMainScreen> {
                 icon: const Icon(Icons.add_circle_outline),
                 label: const Text('Add Transaction'),
                 style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                      vertical: 15.0, horizontal: 24.0),
+                  padding:
+                  const EdgeInsets.symmetric(vertical: 15.0, horizontal: 24.0),
                   shape: const StadiumBorder(),
                   minimumSize: const Size(275, 60),
                   backgroundColor: Colors.white,
@@ -217,7 +196,7 @@ class _AccountMainScreenState extends State<AccountMainScreen> {
 
               const SizedBox(height: 20),
 
-              // ===== Monthly details (uses cached data + stable height on first load) =====
+              // ===== Monthly details =====
               FutureBuilder<Map<String, double>>(
                 future: _monthlySummaryFuture,
                 builder: (context, snapshot) {
@@ -226,7 +205,7 @@ class _AccountMainScreenState extends State<AccountMainScreen> {
 
                   if (!hasLive && _lastSummary == null) {
                     return const SizedBox(
-                      height: 140, // approximate final card height
+                      height: 140,
                       child: Center(child: CircularProgressIndicator()),
                     );
                   }
@@ -238,7 +217,6 @@ class _AccountMainScreenState extends State<AccountMainScreen> {
                   return AnimatedSwitcher(
                     duration: const Duration(milliseconds: 180),
                     child: MonthlyOrDailyDetailsCard(
-
                       selectedDateTime: selectedMonthDate,
                       income: income,
                       expense: expense,
@@ -254,4 +232,5 @@ class _AccountMainScreenState extends State<AccountMainScreen> {
       ),
     );
   }
+
 }
