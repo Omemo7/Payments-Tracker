@@ -3,7 +3,7 @@
 
     <application
         android:name="${applicationName}"
-        android:label="Payments Tracker"
+        android:label="PayTrack"
         android:icon="@mipmap/ic_launcher">
 
         <activity

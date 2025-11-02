@@ -46,8 +46,7 @@ class _DailyDetailsScreenState extends State<DailyDetailsScreen> {
   }
 
   Widget _buildSummaryCard(List<TransactionModel> transactions) {
-    final double computedNet =
-        transactions.fold(0.0, (sum, txn) => sum + txn.amount);
+
     final double incomeTotal = transactions
         .where((txn) => txn.amount > 0)
         .fold(0.0, (sum, txn) => sum + txn.amount);
@@ -55,20 +54,12 @@ class _DailyDetailsScreenState extends State<DailyDetailsScreen> {
         .where((txn) => txn.amount < 0)
         .fold(0.0, (sum, txn) => sum + txn.amount);
 
-    final double net = widget.dailyNet ?? computedNet;
-    final double? cumulativeBalance = widget.cumulativeBalance;
-
-    final Color netColor = net > 0
-        ? AppColors.incomeGreen
-        : net < 0
-            ? AppColors.expenseRed
-            : AppColors.purple;
-
     return MonthlyOrDailyDetailsCard(
         selectedDateTime: widget.selectedDate,
         income: incomeTotal,
         expense: expenseTotal.abs(), // expenseTotal is negative, send absolute value
-        overallBalanceEndOfMonthOrDay: net,
+        overallBalanceEndOfMonthOrDay: widget.cumulativeBalance ?? 0,
+
         isMonthly: false);
   }
 
