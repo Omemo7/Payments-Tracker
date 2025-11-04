@@ -418,7 +418,8 @@ class _ChooseAccountScreenState extends State<ChooseAccountScreen> {
         ],
       ),
 
-      body: _isInitiallyLoading
+      body:
+      _isInitiallyLoading
           ? const Center(child: CircularProgressIndicator())
           : _accountsData.isEmpty
           ? const Center(

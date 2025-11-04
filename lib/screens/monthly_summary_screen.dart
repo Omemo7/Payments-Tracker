@@ -657,7 +657,7 @@ class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
         ],
       ),
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(4.0),
         child: Column(
           children: [
 

@@ -64,7 +64,7 @@ class _AccountMainScreenState extends State<AccountMainScreen> {
       ),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(14.0),
+          padding: const EdgeInsets.all(4.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.start,
             children: <Widget>[

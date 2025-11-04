@@ -121,7 +121,10 @@ class _DailyDetailsScreenState extends State<DailyDetailsScreen> {
         ),
         centerTitle: true,
       ),
-      body: FutureBuilder<List<TransactionModel>>(
+      body: Padding(
+        padding: const EdgeInsets.all(4.0),
+        child:
+      FutureBuilder<List<TransactionModel>>(
         future: _transactionsFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -171,6 +174,7 @@ class _DailyDetailsScreenState extends State<DailyDetailsScreen> {
           );
         },
       ),
+      )
     );
   }
 }
