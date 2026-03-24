@@ -224,6 +224,25 @@ class TransactionTable {
 
   // ---- Methods for Day-by-Day Pagination ----
 
+
+  static Future<double> getTotalExpense() async {
+    final db = await DatabaseHelper.instance.database;
+    final expense = await db.rawQuery('''
+      SELECT SUM(amount) as expense
+      FROM $table
+      WHERE amount<0
+    ''');
+    return (expense.first['expense'] as num?)?.toDouble().abs() ?? 0.0;
+  }
+  static Future<double> getTotalIncome() async {
+    final db = await DatabaseHelper.instance.database;
+    final expense = await db.rawQuery('''
+      SELECT SUM(amount) as income
+      FROM $table
+      WHERE amount>0
+    ''');
+    return (expense.first['income'] as num?)?.toDouble() ?? 0.0;
+  }
   /// Fetches a list of unique dates that have transactions, sorted.
   static Future<List<DateTime>> getUniqueTransactionDates({bool descending = true}) async {
     final db = await DatabaseHelper.instance.database;

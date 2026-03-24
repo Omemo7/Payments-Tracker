@@ -12,6 +12,83 @@ import 'package:payments_tracker_flutter/database/database_helper.dart';
 import 'package:payments_tracker_flutter/global_variables/app_colors.dart';
 
 import '../widgets/basic/safe_scaffold.dart';
+import '../widgets/utility.dart';
+
+class TotalOverview extends StatefulWidget{
+  const TotalOverview({Key? key}) : super(key: key);
+
+  @override
+  State<TotalOverview> createState() => _TotalOverviewState();
+}
+
+class _TotalOverviewState extends State<TotalOverview> {
+  double totalExpense = 0.0;
+  double totalIncome = 0.0;
+  double totalBalance = 0.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _refresh();
+  }
+
+  Future<void> _refresh() async {
+    final expense = await TransactionTable.getTotalExpense(); // Your DB function
+    final income = await TransactionTable.getTotalIncome(); // Your DB function
+    setState(() {
+      totalIncome = income;
+      totalExpense = expense;
+      totalBalance = income - expense;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(15, 10, 15, 10),
+      child: Column(
+        children: [
+          // 1. Income Row
+          _buildSummaryRow('Income:',  totalIncome,AppColors.incomeGreen ),
+          const SizedBox(height: 8),
+
+
+          // 2. Expense Row
+          _buildSummaryRow('Expense:',totalExpense, AppColors.expenseRed),
+
+          const Divider(height: 20, thickness: 1), // Visual separator
+
+          // 3. Balance Row
+          _buildSummaryRow(
+              'Balance:',
+              totalBalance,
+              totalBalance >= 0 ? AppColors.incomeGreen :  AppColors.expenseRed,
+
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummaryRow(String label, double value, Color valueColor) {
+    return Row(
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+              fontSize: 18,
+              fontWeight:FontWeight.bold
+          ),
+        ),
+        const Spacer(),
+        Utility.handleNumberAppearanceForOverflow(number: value,
+            color: valueColor
+            , fontSize: 18, fontWeight:  FontWeight.bold ),
+      ],
+    );
+  }
+
+}
 
 class ChooseAccountScreen extends StatefulWidget {
   const ChooseAccountScreen({Key? key}) : super(key: key);
@@ -19,6 +96,7 @@ class ChooseAccountScreen extends StatefulWidget {
   @override
   State<ChooseAccountScreen> createState() => _ChooseAccountScreenState();
 }
+
 
 class _ChooseAccountScreenState extends State<ChooseAccountScreen> {
   // Store accounts with their balances
@@ -496,6 +574,7 @@ class _ChooseAccountScreenState extends State<ChooseAccountScreen> {
               ],
             ),
           ),
+
           const SizedBox(height: 15),
           Expanded(
             child: _filteredAccountsData.isEmpty && _searchController.text.isNotEmpty
@@ -588,6 +667,10 @@ class _ChooseAccountScreenState extends State<ChooseAccountScreen> {
                 );
               },
             ),
+          ),
+          Padding(
+              padding: const EdgeInsets.fromLTRB(30, 10, 30, 10),
+              child: TotalOverview()
           ),
         ],
       ),
